@@ -1,0 +1,27 @@
+package com.composesupercharts.models
+
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+enum class PyramidChartType {
+    PYRAMID,
+    FUNNEL
+}
+
+data class PyramidChartStyleConfig(
+    val type: PyramidChartType = PyramidChartType.PYRAMID,
+    val spacing: Dp = 4.dp,
+    val segmentLabelTextStyle: TextStyle = TextStyle(color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium),
+    val outsideLabelTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Normal),
+    val showLabels: Boolean = true,
+    val tooltipBackgroundColor: Color = Color.White,
+    val tooltipBorderColor: Color = Color.LightGray,
+    val tooltipLabelTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Normal),
+    val tooltipValueTextStyle: TextStyle = TextStyle(color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Medium),
+    val legendPosition: LegendPosition = LegendPosition.BOTTOM,
+    val legendTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Normal)
+)
