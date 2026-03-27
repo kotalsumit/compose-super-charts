@@ -31,5 +31,7 @@ data class HeatmapChartStyleConfig(
         fontWeight = FontWeight.Bold
     ),
     val padding: Dp = 16.dp,
-    val animationDuration: Int = 1000
+    val animationDuration: Int = 1000,
+    val tooltipAutoDismissMs: Long? = null,
+    val showTooltipCloseButton: Boolean = false
 )

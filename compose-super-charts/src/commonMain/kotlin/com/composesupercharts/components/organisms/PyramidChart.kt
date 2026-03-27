@@ -4,6 +4,10 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.calculateCentroidSize
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -12,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.drawText
@@ -38,18 +43,19 @@ fun PyramidChart(
         animationProgress.snapTo(0f)
         animationProgress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing)
+            animationSpec = tween(durationMillis = config.animationDuration, easing = FastOutSlowInEasing)
         )
     }
 
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
-    var tapOffset by remember { mutableStateOf(Offset.Zero) }
-
+    var scale by remember { mutableStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+    
     LaunchedEffect(data) {
         selectedIndex = null
     }
 
-    val totalValue = remember(data) { data.segments.sumOf { it.value.toDouble() }.toFloat().coerceAtLeast(1f) }
+    val totalValue = remember(data) { data.segments.sumOf { it.value.toDouble().coerceAtLeast(0.0) }.toFloat().coerceAtLeast(1f) }
     
     Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth().aspectRatio(1f).padding(16.dp)) {
@@ -57,8 +63,45 @@ fun PyramidChart(
             val chartHeight = constraints.maxHeight.toFloat()
             val progress = animationProgress.value
 
+            var tapOffset by remember { mutableStateOf(Offset.Zero) }
             Box(
                 modifier = Modifier.fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        translationX = offset.x
+                        translationY = offset.y
+                    }
+                    .pointerInput(data) {
+                        awaitEachGesture {
+                            var zoom = 1f
+                            var pastTouchSlop = false
+                            val touchSlop = viewConfiguration.touchSlop
+
+                            do {
+                                val event = awaitPointerEvent()
+                                val isMultiTouch = event.changes.size > 1
+
+                                if (isMultiTouch) {
+                                    val zoomChange = event.calculateZoom()
+                                    val panChange = event.calculatePan()
+
+                                    if (!pastTouchSlop) {
+                                        zoom *= zoomChange
+                                        val centroidSize = event.calculateCentroidSize(useCurrent = false)
+                                        val zoomMotion = kotlin.math.abs(1 - zoom) * centroidSize
+                                        if (zoomMotion > touchSlop) pastTouchSlop = true
+                                    }
+
+                                    if (pastTouchSlop) {
+                                        scale = (scale * zoomChange).coerceIn(1f, 10f)
+                                        offset += panChange
+                                        event.changes.forEach { it.consume() }
+                                    }
+                                }
+                            } while (event.changes.any { it.pressed })
+                        }
+                    }
                     .pointerInput(data) {
                         detectTapGestures { tap ->
                             tapOffset = tap
@@ -102,7 +145,7 @@ fun PyramidChart(
                     val spacingPx = config.spacing.toPx()
                     val totalSpacing = spacingPx * (data.segments.size - 1)
                     val availableHeight = (size.height - totalSpacing).coerceAtLeast(0f)
-                    val segmentHeights = data.segments.map { (it.value / totalValue) * availableHeight }
+                    val segmentHeights = data.segments.map { (it.value.coerceAtLeast(0f) / totalValue) * availableHeight }
 
                     data.segments.forEachIndexed { index, segment ->
                         val h = segmentHeights[index] * progress
@@ -182,8 +225,11 @@ fun PyramidChart(
                                 tooltipBackgroundColor = config.tooltipBackgroundColor,
                                 tooltipBorderColor = config.tooltipBorderColor,
                                 tooltipLabelTextStyle = config.tooltipLabelTextStyle,
-                                tooltipValueTextStyle = config.tooltipValueTextStyle
-                            )
+                                tooltipValueTextStyle = config.tooltipValueTextStyle,
+                                tooltipAutoDismissMs = config.tooltipAutoDismissMs,
+                                showTooltipCloseButton = config.showTooltipCloseButton
+                            ),
+                            onClose = { selectedIndex = null }
                         )
                     }
                 }

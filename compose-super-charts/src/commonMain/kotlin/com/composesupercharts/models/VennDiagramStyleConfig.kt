@@ -29,5 +29,8 @@ data class VennDiagramStyleConfig(
         fontWeight = FontWeight.Medium
     ),
     val padding: Dp = 16.dp,
-    val circleRadiusScale: Float = 0.9f
+    val circleRadiusScale: Float = 0.9f,
+    val tooltipAutoDismissMs: Long? = null,
+    val showTooltipCloseButton: Boolean = false,
+    val animationDuration: Int = 1000
 )

@@ -20,5 +20,8 @@ data class BubbleChartStyleConfig(
     val tooltipLabelTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Normal),
     val tooltipValueTextStyle: TextStyle = TextStyle(color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Medium),
     val chartHeight: Dp = 300.dp,
-    val padding: Dp = 16.dp
+    val padding: Dp = 16.dp,
+    val tooltipAutoDismissMs: Long? = null,
+    val showTooltipCloseButton: Boolean = false,
+    val animationDuration: Int = 1000
 )

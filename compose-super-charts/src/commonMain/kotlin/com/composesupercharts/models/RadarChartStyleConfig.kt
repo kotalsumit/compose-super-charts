@@ -37,5 +37,7 @@ data class RadarChartStyleConfig(
         fontWeight = FontWeight.Bold
     ),
     val padding: Dp = 48.dp,
-    val animationDuration: Int = 1000
+    val animationDuration: Int = 1000,
+    val tooltipAutoDismissMs: Long? = null,
+    val showTooltipCloseButton: Boolean = false
 )

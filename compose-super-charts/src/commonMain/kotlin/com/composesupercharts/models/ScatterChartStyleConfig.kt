@@ -37,5 +37,7 @@ data class ScatterChartStyleConfig(
         fontWeight = FontWeight.Bold
     ),
     val padding: Dp = 32.dp,
+    val tooltipAutoDismissMs: Long? = null,
+    val showTooltipCloseButton: Boolean = false,
     val animationDuration: Int = 1000
 )

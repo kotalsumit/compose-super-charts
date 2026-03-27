@@ -24,6 +24,8 @@ data class BarChartStyleConfig(
     val barSpacing: Dp = 12.dp,
     val clusterSpacing: Dp = 4.dp,
     val chartWidth: Dp = 300.dp,
+    val chartHeight: Dp = 300.dp,
+    val isScrollable: Boolean = true,
     val yAxisWidth: Dp = 80.dp,
     val yAxisPosition: YAxisPosition = YAxisPosition.LEFT,
     val showLabels: Boolean = true,
@@ -31,7 +33,7 @@ data class BarChartStyleConfig(
     val yAxisLabelTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Normal),
     val yAxisDividerColor: Color = Color.LightGray,
     val xAxisDividerColor: Color = Color.LightGray,
-    val tooltipBackgroundColor: Color = Color(0xFAFFFFFF),
+    val tooltipBackgroundColor: Color = Color.White,
     val tooltipBorderColor: Color = Color(0x15000000),
     val tooltipElevation: Dp = 6.dp,
     val tooltipLabelTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Normal),
@@ -43,5 +45,7 @@ data class BarChartStyleConfig(
     val legendBarHeight: Dp = 12.dp,
     val legendBarRadius: Dp = 2.dp,
     val tooltipAutoDismissMs: Long? = null,
-    val showTooltipCloseButton: Boolean = false
+    val showTooltipCloseButton: Boolean = false,
+    val xAxisLabelRotation: Float = -45f,
+    val animationDuration: Int = 1000
 )
