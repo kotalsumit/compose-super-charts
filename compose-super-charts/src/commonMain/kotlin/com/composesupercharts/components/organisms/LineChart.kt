@@ -3,6 +3,9 @@ package com.composesupercharts.components.organisms
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.calculateCentroidSize
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.semantics.semantics
@@ -31,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import com.composesupercharts.utils.rotatedLayout
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -88,7 +92,7 @@ fun LineChart(
         animationProgress.snapTo(0f)
         animationProgress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing)
+            animationSpec = tween(durationMillis = config.animationDuration, easing = FastOutSlowInEasing)
         )
     }
 
@@ -107,7 +111,6 @@ fun LineChart(
     
     // Zoom & Pan states
     var scaleX by remember { mutableStateOf(1f) }
-    var panX by remember { mutableStateOf(0f) }
 
     val scrollState = rememberScrollState()
     
@@ -193,9 +196,33 @@ fun LineChart(
                 modifier = chartWidthModifier
                     .height(chartHeight)
                     .pointerInput(points) {
-                        detectTransformGestures { _, pan, zoom, _ ->
-                             scaleX = (scaleX * zoom).coerceIn(1f, 10f)
-                             // Handle pan if needed, or let scrollState handle it
+                        awaitEachGesture {
+                            var zoom = 1f
+                            var pastTouchSlop = false
+                            val touchSlop = viewConfiguration.touchSlop
+
+                            do {
+                                val event = awaitPointerEvent()
+                                val isZooming = event.changes.size > 1
+                                if (isZooming) {
+                                    val zoomChange = event.calculateZoom()
+                                    if (!pastTouchSlop) {
+                                        zoom *= zoomChange
+                                        val centroidSize = event.calculateCentroidSize(useCurrent = false)
+                                        val zoomMotion = kotlin.math.abs(1 - zoom) * centroidSize
+                                        if (zoomMotion > touchSlop) {
+                                            pastTouchSlop = true
+                                        }
+                                    }
+
+                                    if (pastTouchSlop) {
+                                        if (zoomChange != 1f) {
+                                            scaleX = (scaleX * zoomChange).coerceIn(1f, 10f)
+                                        }
+                                        event.changes.forEach { it.consume() }
+                                    }
+                                }
+                            } while (event.changes.any { it.pressed })
                         }
                     }
                     .pointerInput(points) {
@@ -337,7 +364,7 @@ fun LineChart(
                             textAlign = TextAlign.Center,
                             maxLines = 1,
                             softWrap = false,
-                            modifier = Modifier.requiredWidth(100.dp).rotate(config.xAxisLabelRotation)
+                            modifier = Modifier.requiredWidth(80.dp).rotatedLayout(config.xAxisLabelRotation)
                         )
                     }
                 }

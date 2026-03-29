@@ -41,5 +41,9 @@ data class ColumnChartStyleConfig(
     val legendItemSpacing: Dp = 24.dp,
     val legendBarWidth: Dp = 12.dp,
     val legendBarHeight: Dp = 12.dp,
-    val legendBarRadius: Dp = 2.dp
+    val legendBarRadius: Dp = 2.dp,
+    val tooltipAutoDismissMs: Long? = null,
+    val showTooltipCloseButton: Boolean = false,
+    val xAxisLabelRotation: Float = -45f,
+    val animationDuration: Int = 1000
 )
