@@ -10,7 +10,8 @@ import androidx.compose.ui.unit.sp
 data class GaugeChartStyleConfig(
     val arcThickness: Dp = 30.dp,
     val backgroundArcColor: Color = Color.LightGray.copy(alpha = 0.3f),
-    val needleColor: Color = Color.Black,
+    val valueArcColor: Color = Color(0xFF2196F3),
+    val needleColor: Color = Color(0xFF616161),
     val needleWidth: Dp = 4.dp,
     val needleBaseRadius: Dp = 8.dp,
     val valueTextStyle: TextStyle = TextStyle(
@@ -31,5 +32,11 @@ data class GaugeChartStyleConfig(
     val animationDuration: Int = 1000,
     val startAngle: Float = 180f,
     val sweepAngle: Float = 180f,
-    val padding: Dp = 16.dp
+    val padding: Dp = 16.dp,
+    val tooltipAutoDismissMs: Long? = null,
+    val showTooltipCloseButton: Boolean = false,
+    val tooltipBackgroundColor: Color = Color.White,
+    val tooltipBorderColor: Color = Color(0x33000000),
+    val tooltipLabelTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Normal),
+    val tooltipValueTextStyle: TextStyle = TextStyle(color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Medium)
 )
