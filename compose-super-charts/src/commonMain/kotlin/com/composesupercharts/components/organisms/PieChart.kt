@@ -4,12 +4,19 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.calculateCentroidSize
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.semantics
 import com.composesupercharts.utils.ChartAccessibility.pieChartDescription
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,12 +70,14 @@ fun PieChart(
         animationProgress.snapTo(0f)
         animationProgress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing)
+            animationSpec = tween(durationMillis = config.animationDuration, easing = FastOutSlowInEasing)
         )
     }
 
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     var rotationAngle by remember { mutableStateOf(0f) }
+    var scale by remember { mutableStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
 
     Column(
         modifier = modifier.fillMaxWidth().semantics { pieChartDescription(data) },
@@ -79,20 +89,58 @@ fun PieChart(
         }
 
         Box(
-            modifier = Modifier.size(config.chartSize).padding(16.dp),
+            modifier = Modifier.size(config.chartSize).padding(16.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    translationX = offset.x
+                    translationY = offset.y
+                }
+                .pointerInput(data) {
+                    awaitEachGesture {
+                        var pastTouchSlop = false
+                        val touchSlop = viewConfiguration.touchSlop
+                        var zoom = 1f
+
+                        do {
+                            val event = awaitPointerEvent()
+                            val isMultiTouch = event.changes.size > 1
+
+                            if (isMultiTouch) {
+                                val zoomChange = event.calculateZoom()
+                                val panChange = event.calculatePan()
+
+                                if (!pastTouchSlop) {
+                                    zoom *= zoomChange
+                                    val centroidSize = event.calculateCentroidSize(useCurrent = false)
+                                    val zoomMotion = kotlin.math.abs(1 - zoom) * centroidSize
+                                    if (zoomMotion > touchSlop) pastTouchSlop = true
+                                }
+
+                                if (pastTouchSlop) {
+                                    scale = (scale * zoomChange).coerceIn(1f, 10f)
+                                    offset += panChange
+                                    event.changes.forEach { it.consume() }
+                                }
+                            } else if (event.changes.size == 1) {
+                                // One finger drag for rotation
+                                val change = event.changes[0]
+                                if (change.pressed && change.previousPressed) {
+                                    val dragAmount = change.position - change.previousPosition
+                                    val center = Offset(size.width / 2f, size.height / 2f)
+                                    val startAngle = atan2(change.position.y - dragAmount.y - center.y, change.position.x - dragAmount.x - center.x)
+                                    val endAngle = atan2(change.position.y - center.y, change.position.x - center.x)
+                                    rotationAngle += (endAngle - startAngle).toDegrees()
+                                    change.consume()
+                                }
+                            }
+                        } while (event.changes.any { it.pressed })
+                    }
+                },
             contentAlignment = Alignment.Center
         ) {
             Canvas(
                 modifier = Modifier.fillMaxWidth().size(config.chartSize)
-                    .pointerInput(data) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            val center = Offset(size.width / 2f, size.height / 2f)
-                            val startAngle = atan2(change.position.y - dragAmount.y - center.y, change.position.x - dragAmount.x - center.x)
-                            val endAngle = atan2(change.position.y - center.y, change.position.x - center.x)
-                            rotationAngle += (endAngle - startAngle).toDegrees()
-                        }
-                    }
                     .pointerInput(data) {
                     detectTapGestures { tap ->
                         val center = Offset(size.width.toFloat() / 2f, size.height.toFloat() / 2f)
@@ -205,8 +253,8 @@ fun PieChart(
                     TooltipBubble(
                         xPosition = 0f,
                         labels = slice.tooltipData ?: listOf(TooltipBubbleData(slice.label, slice.value.toInt().toString())),
-                        isFirst = false,
-                        isLast = false,
+                        isFirst = index == 0,
+                        isLast = index == data.slices.lastIndex,
                         config = ChartStyleConfig(
                             lines = emptyList(),
                             tooltipBackgroundColor = config.tooltipBackgroundColor,
@@ -230,29 +278,26 @@ fun PieChart(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PieLegend(data: PieChartData, config: PieChartStyleConfig) {
-    Row(
+    FlowRow(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+        horizontalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column {
-            data.slices.chunked(3).forEach { rowSlices ->
-                Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(config.legendItemSpacing)) {
-                    rowSlices.forEach { slice ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            ChartLegendShape(
-                                modifier = Modifier.size(config.legendShapeSize),
-                                color = slice.color,
-                                pointRadius = config.legendShapeRadius
-                            )
-                            Spacer(Modifier.size(4.dp))
-                            ChartText(text = slice.label, style = config.legendTextStyle)
-                        }
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
+        data.slices.forEach { slice ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = config.legendItemSpacing / 2)
+            ) {
+                ChartLegendShape(
+                    modifier = Modifier.size(config.legendShapeSize),
+                    color = slice.color,
+                    pointRadius = config.legendShapeRadius
+                )
+                Spacer(Modifier.size(4.dp))
+                ChartText(text = slice.label, style = config.legendTextStyle)
             }
         }
     }

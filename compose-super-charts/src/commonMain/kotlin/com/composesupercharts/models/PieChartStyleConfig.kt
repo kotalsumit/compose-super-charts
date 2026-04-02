@@ -14,7 +14,7 @@ data class PieChartStyleConfig(
     val showLabels: Boolean = true,
     val labelTextStyle: TextStyle = TextStyle(color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold),
     val legendPosition: LegendPosition = LegendPosition.BOTTOM,
-    val legendTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Normal),
+    val legendTextStyle: TextStyle = TextStyle(color = Color.DarkGray, fontSize = 11.sp, fontWeight = FontWeight.Normal),
     val tooltipBackgroundColor: Color = Color(0xFAFFFFFF),
     val tooltipBorderColor: Color = Color(0x15000000),
     val tooltipElevation: Dp = 6.dp,
@@ -28,5 +28,6 @@ data class PieChartStyleConfig(
     val tooltipOffsetRatio: Float = 0.7f,
     val legendShapeRadius: Float = 6f,
     val tooltipAutoDismissMs: Long? = null,
-    val showTooltipCloseButton: Boolean = false
+    val showTooltipCloseButton: Boolean = false,
+    val animationDuration: Int = 1000
 )

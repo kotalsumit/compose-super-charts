@@ -4,8 +4,13 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.calculateCentroidSize
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,7 +48,7 @@ fun BarChart(
         animationProgress.snapTo(0f)
         animationProgress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing)
+            animationSpec = tween(durationMillis = config.animationDuration, easing = FastOutSlowInEasing)
         )
     }
 
@@ -63,6 +68,9 @@ fun BarChart(
         maxX * step
     }
 
+    val scrollState = rememberScrollState()
+    var scaleY by remember { mutableStateOf(1f) }
+    
     val totalPointThickness = when (config.type) {
         BarChartType.CLUSTERED -> {
             val maxBars = data.points.maxOf { it.values.size }
@@ -71,7 +79,7 @@ fun BarChart(
         else -> config.barThickness
     }
     
-    val itemThickness = totalPointThickness + config.barSpacing * 2
+    val itemThickness = (totalPointThickness + config.barSpacing * 2) * scaleY
     val chartContentHeight = itemThickness * data.points.size
 
     val animatedValues = remember(data) {
@@ -85,7 +93,7 @@ fun BarChart(
             anims.forEachIndexed { vIdx, animatable ->
                 animatable.animateTo(
                     targetValue = data.points[pIdx].values.getOrNull(vIdx) ?: 0f,
-                    animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing)
+                    animationSpec = tween(durationMillis = (config.animationDuration * 0.8f).toInt(), easing = FastOutSlowInEasing)
                 )
             }
         }
@@ -95,7 +103,7 @@ fun BarChart(
         modifier = modifier.fillMaxWidth().semantics {
             barChartDescription(
                 seriesCount = if (data.points.isNotEmpty()) data.points[0].values.size else 0,
-                points = emptyList(),
+                pointsCount = data.points.size,
                 yAxisLabel = null
             )
         }
@@ -105,7 +113,7 @@ fun BarChart(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth().height(config.chartHeight).then(if (config.isScrollable) Modifier.verticalScroll(scrollState) else Modifier)) {
             if (config.yAxisPosition == YAxisPosition.LEFT) {
                 YAxisLabels(data, config, chartContentHeight)
                 ChartDivider(color = config.yAxisDividerColor, thickness = 1.dp, modifier = Modifier.height(chartContentHeight).width(1.dp))
@@ -117,6 +125,36 @@ fun BarChart(
                         modifier = Modifier.fillMaxWidth()
                             .height(chartContentHeight)
                             .padding(horizontal = 16.dp)
+                            .pointerInput(data) {
+                                awaitEachGesture {
+                                    var zoom = 1f
+                                    var pastTouchSlop = false
+                                    val touchSlop = viewConfiguration.touchSlop
+
+                                    do {
+                                        val event = awaitPointerEvent()
+                                        val isZooming = event.changes.size > 1
+                                        if (isZooming) {
+                                            val zoomChange = event.calculateZoom()
+                                            if (!pastTouchSlop) {
+                                                zoom *= zoomChange
+                                                val centroidSize = event.calculateCentroidSize(useCurrent = false)
+                                                val zoomMotion = kotlin.math.abs(1 - zoom) * centroidSize
+                                                if (zoomMotion > touchSlop) {
+                                                    pastTouchSlop = true
+                                                }
+                                            }
+
+                                            if (pastTouchSlop) {
+                                                if (zoomChange != 1f) {
+                                                    scaleY = (scaleY * zoomChange).coerceIn(1f, 10f)
+                                                }
+                                                event.changes.forEach { it.consume() }
+                                            }
+                                        }
+                                    } while (event.changes.any { it.pressed })
+                                }
+                            }
                             .pointerInput(data) {
                                 detectTapGestures { tap ->
                                     tapOffset = tap
@@ -189,14 +227,14 @@ fun BarChart(
                             val centerY = itemThicknessPx * index + (itemThicknessPx / 2)
                             
                             Box(modifier = Modifier.offset(
-                                x = with(density) { (tapOffset.x).toDp() },
+                                x = 60.dp,
                                 y = with(density) { (centerY).toDp() - 40.dp }
                             )) {
                                 TooltipBubble(
                                     xPosition = 0f,
                                     labels = point.tooltipData ?: point.values.mapIndexed { idx, v -> TooltipBubbleData(legendLabels?.getOrNull(idx) ?: "Value", v.toInt().toString()) },
-                                    isFirst = false,
-                                    isLast = false,
+                                    isFirst = index == 0,
+                                    isLast = index == data.points.lastIndex,
                                     config = ChartStyleConfig(
                                         lines = emptyList(),
                                         tooltipBackgroundColor = config.tooltipBackgroundColor,
