@@ -28,7 +28,7 @@ fun PyramidChartScreen(onBack: () -> Unit) {
     val segments = List(segmentCount) { idx ->
         PyramidChartSegment(
             label = "Step ${idx + 1}",
-            value = 100f - (idx * 15f),
+            value = 100f - (idx * 10f),
             color = colors[idx % colors.size]
         )
     }

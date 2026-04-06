@@ -88,8 +88,8 @@ data class ChartStyleConfig(
     val chartPaddingBottom: Dp = 40.dp,
     val yAxisPaddingStart: Dp = 26.dp, 
     val axisLabelSpacing: Dp = 10.dp,
-    val yAxisDividerColor: Color = Color(0xFFEEEEEE),
-    val xAxisDividerColor: Color = Color(0xFFEEEEEE),
+    val yAxisDividerColor: Color = Color.LightGray,
+    val xAxisDividerColor: Color = Color.LightGray,
     val xAxisLabelRotation: Float = -45f,
     val legendItemSpacing: Dp = 24.dp,
     val legendShapeWidth: Dp = 40.dp,
@@ -105,5 +105,6 @@ data class ChartStyleConfig(
     val yAxisLabelColor: Color = Color.Gray,
     val xAxisLabelColor: Color = Color.Gray,
     val tooltipAutoDismissMs: Long? = null,
-    val showTooltipCloseButton: Boolean = false
+    val showTooltipCloseButton: Boolean = false,
+    val animationDuration: Int = 1000
 )

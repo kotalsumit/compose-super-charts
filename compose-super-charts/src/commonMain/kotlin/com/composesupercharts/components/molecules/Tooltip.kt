@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import com.composesupercharts.components.atoms.ChartSurface
 import com.composesupercharts.components.atoms.ChartText
 import androidx.compose.runtime.Composable
@@ -28,11 +29,12 @@ import androidx.compose.ui.unit.dp
 import com.composesupercharts.models.ChartPointData
 import com.composesupercharts.models.ChartStyleConfig
 import com.composesupercharts.models.TooltipBubbleData
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.*
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
 
@@ -104,7 +106,7 @@ fun TooltipBubble(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().zIndex(10f)) {
+    Box(modifier = Modifier.zIndex(10f)) {
         Box(modifier = Modifier.offset { IntOffset(xPosition.toInt(), -10) }) {
             ChartSurface(
                 modifier = Modifier
@@ -126,19 +128,28 @@ fun TooltipBubble(
             ) {
                 Box {
                     if (config.showTooltipCloseButton) {
-                        IconButton(
-                            onClick = onClose,
+                        Surface(
+                            color = config.tooltipBackgroundColor.copy(alpha = 0.9f),
+                            shape = CircleShape,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .offset(x = 8.dp, y = (-8).dp)
-                                .zIndex(11f)
+                                .offset(x = 12.dp, y = (-12).dp)
+                                .size(24.dp)
+                                .zIndex(11f),
+                            shadowElevation = 2.dp,
+                            border = androidx.compose.foundation.BorderStroke(0.5.dp, config.tooltipBorderColor)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Close Tooltip",
-                                tint = config.tooltipLabelTextStyle.color.copy(alpha = 0.6f),
-                                modifier = Modifier.padding(4.dp)
-                            )
+                            IconButton(
+                                onClick = onClose,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close Tooltip",
+                                    tint = config.tooltipLabelTextStyle.color.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
                     }
 
