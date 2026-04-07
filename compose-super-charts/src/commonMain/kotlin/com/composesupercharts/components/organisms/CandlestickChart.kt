@@ -25,6 +25,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.composesupercharts.components.atoms.ChartDivider
 import com.composesupercharts.components.molecules.TooltipBubble
 import com.composesupercharts.models.*
 
@@ -158,6 +159,7 @@ fun CandlestickChart(
                         }
                     }
 
+                    ChartDivider(color = config.axisColor, thickness = config.axisThickness)
                     // X-Axis Labels Row (Scrollable)
                     Row(
                         modifier = Modifier.width(with(density) { width.toDp() }).height(48.dp),
@@ -169,10 +171,19 @@ fun CandlestickChart(
                                 contentAlignment = Alignment.TopCenter
                             ) {
                                 if (index % (candleCount / 5).coerceAtLeast(1) == 0) {
+                                    val safeOffset = when {
+                                        index == 0 -> 20.dp
+                                        index == data.entries.size - 1 -> (-20).dp
+                                        else -> 0.dp
+                                    }
                                     com.composesupercharts.components.atoms.ChartText(
                                         text = entry.label,
                                         style = config.xAxisLabelTextStyle,
-                                        modifier = Modifier.rotatedLayout(config.xAxisLabelRotation).padding(top = 8.dp)
+                                        modifier = Modifier
+                                            .wrapContentWidth(unbounded = true)
+                                            .offset(x = safeOffset)
+                                            .padding(top = 8.dp)
+                                            .rotatedLayout(config.xAxisLabelRotation)
                                     )
                                 }
                             }
