@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.zIndex
 import com.composesupercharts.utils.ChartAccessibility.barChartDescription
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -28,6 +29,9 @@ import androidx.compose.ui.unit.dp
 import com.composesupercharts.components.atoms.ChartDivider
 import com.composesupercharts.components.atoms.ChartText
 import com.composesupercharts.components.molecules.TooltipBubble
+import com.composesupercharts.components.molecules.UniversalLegend
+import com.composesupercharts.components.molecules.LegendItemData
+import com.composesupercharts.components.molecules.LegendShape
 import com.composesupercharts.models.*
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -82,22 +86,6 @@ fun BarChart(
     val itemThickness = (totalPointThickness + config.barSpacing * 2) * scaleY
     val chartContentHeight = itemThickness * data.points.size
 
-    val animatedValues = remember(data) {
-        data.points.map { point ->
-            point.values.map { v -> Animatable(0f) }
-        }
-    }
-
-    LaunchedEffect(data) {
-        animatedValues.forEachIndexed { pIdx, anims ->
-            anims.forEachIndexed { vIdx, animatable ->
-                animatable.animateTo(
-                    targetValue = data.points[pIdx].values.getOrNull(vIdx) ?: 0f,
-                    animationSpec = tween(durationMillis = (config.animationDuration * 0.8f).toInt(), easing = FastOutSlowInEasing)
-                )
-            }
-        }
-    }
 
     Column(
         modifier = modifier.fillMaxWidth().semantics {
@@ -109,7 +97,18 @@ fun BarChart(
         }
     ) {
         if (config.legendPosition == LegendPosition.TOP && legendLabels != null) {
-            BarChartLegend(labels = legendLabels, data = data, config = config)
+            UniversalLegend(
+                items = legendLabels.mapIndexed { index, label ->
+                    LegendItemData(
+                        label = label,
+                        color = data.points.firstOrNull { it.colors.size > index }?.colors?.get(index) ?: Color.Gray
+                    )
+                },
+                textStyle = config.legendTextStyle,
+                shape = LegendShape.ROUNDED_SQUARE,
+                shapeSize = config.legendBarWidth,
+                itemSpacing = config.legendItemSpacing
+            )
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -120,10 +119,12 @@ fun BarChart(
             }
 
             BoxWithConstraints(modifier = Modifier.weight(1f)) {
+                val chartWidth = constraints.maxWidth.toFloat() - with(density) { 32.dp.toPx() }
                 Column {
                     Box(
                         modifier = Modifier.fillMaxWidth()
                             .height(chartContentHeight)
+                            .zIndex(10f)
                             .padding(horizontal = 16.dp)
                             .pointerInput(data) {
                                 awaitEachGesture {
@@ -177,8 +178,8 @@ fun BarChart(
                                 
                                 when (config.type) {
                                     BarChartType.STANDARD -> {
-                                        val val0 = animatedValues[index].getOrNull(0)?.value ?: 0f
-                                        val barWidth = (val0 / maxOfX) * size.width
+                                        val value = (point.values.getOrNull(0) ?: 0f) * progress
+                                        val barWidth = (value / maxOfX) * size.width
                                         drawRoundRect(
                                             color = point.colors.getOrNull(0) ?: Color.Gray,
                                             topLeft = Offset(0f, centerY - config.barThickness.toPx() / 2),
@@ -191,8 +192,8 @@ fun BarChart(
                                         val clusterSpacingPx = config.clusterSpacing.toPx()
                                         val clusterThickness = (barThicknessPx * point.values.size) + (clusterSpacingPx * (point.values.size - 1))
                                         var currentY = centerY - clusterThickness / 2
-                                        point.values.forEachIndexed { valIdx, _ ->
-                                            val value = animatedValues[index].getOrNull(valIdx)?.value ?: 0f
+                                        point.values.forEachIndexed { valIdx, rawValue ->
+                                            val value = rawValue * progress
                                             val barWidth = (value / maxOfX) * size.width
                                             drawRoundRect(
                                                 color = point.colors.getOrNull(valIdx) ?: Color.Gray,
@@ -206,8 +207,8 @@ fun BarChart(
                                     BarChartType.STACKED -> {
                                         val barThicknessPx = config.barThickness.toPx()
                                         var currentX = 0f
-                                        point.values.forEachIndexed { valIdx, _ ->
-                                            val value = animatedValues[index].getOrNull(valIdx)?.value ?: 0f
+                                        point.values.forEachIndexed { valIdx, rawValue ->
+                                            val value = rawValue * progress
                                             val barWidth = (value / maxOfX) * size.width
                                             drawRect(
                                                 color = point.colors.getOrNull(valIdx) ?: Color.Gray,
@@ -226,15 +227,22 @@ fun BarChart(
                             val itemThicknessPx = with(density) { itemThickness.toPx() }
                             val centerY = itemThicknessPx * index + (itemThicknessPx / 2)
                             
-                            Box(modifier = Modifier.offset(
-                                x = 60.dp,
-                                y = with(density) { (centerY).toDp() - 40.dp }
-                            )) {
+                            val barValue = if (config.type == BarChartType.STACKED) point.values.sum() else point.values.maxOrNull() ?: 0f
+                            val barWidthPx = (barValue / maxOfX) * chartWidth
+
+                            Box(modifier = Modifier
+                                .offset(
+                                    x = 0.dp,
+                                    y = with(density) { (centerY).toDp() - 40.dp }
+                                )
+                                .fillMaxWidth()
+                                .zIndex(15f)
+                            ) {
                                 TooltipBubble(
-                                    xPosition = 0f,
+                                    xPosition = barWidthPx,
                                     labels = point.tooltipData ?: point.values.mapIndexed { idx, v -> TooltipBubbleData(legendLabels?.getOrNull(idx) ?: "Value", v.toInt().toString()) },
                                     isFirst = index == 0,
-                                    isLast = index == data.points.lastIndex,
+                                    isLast = barWidthPx > chartWidth * 0.5f,
                                     config = ChartStyleConfig(
                                         lines = emptyList(),
                                         tooltipBackgroundColor = config.tooltipBackgroundColor,
@@ -276,7 +284,18 @@ fun BarChart(
 
         if (config.legendPosition == LegendPosition.BOTTOM && legendLabels != null) {
             Spacer(modifier = Modifier.height(16.dp))
-            BarChartLegend(labels = legendLabels, data = data, config = config)
+            UniversalLegend(
+                items = legendLabels.mapIndexed { index, label ->
+                    LegendItemData(
+                        label = label,
+                        color = data.points.firstOrNull { it.colors.size > index }?.colors?.get(index) ?: Color.Gray
+                    )
+                },
+                textStyle = config.legendTextStyle,
+                shape = LegendShape.ROUNDED_SQUARE,
+                shapeSize = config.legendBarWidth,
+                itemSpacing = config.legendItemSpacing
+            )
         }
     }
 }
@@ -299,28 +318,3 @@ private fun YAxisLabels(data: BarChartData, config: BarChartStyleConfig, height:
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun BarChartLegend(labels: List<String>, data: BarChartData, config: BarChartStyleConfig) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        labels.forEachIndexed { index, label ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = config.legendItemSpacing / 2)
-            ) {
-                Canvas(modifier = Modifier.size(config.legendBarWidth, config.legendBarHeight)) {
-                    drawRoundRect(
-                        color = data.points.firstOrNull()?.colors?.getOrNull(index) ?: Color.Gray,
-                        cornerRadius = CornerRadius(config.legendBarRadius.toPx(), config.legendBarRadius.toPx())
-                    )
-                }
-                Spacer(modifier = Modifier.size(4.dp))
-                ChartText(text = label, style = config.legendTextStyle)
-            }
-        }
-    }
-}

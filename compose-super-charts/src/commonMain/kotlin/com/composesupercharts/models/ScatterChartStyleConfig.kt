@@ -19,12 +19,13 @@ data class ScatterChartStyleConfig(
         fontSize = 12.sp,
         fontWeight = FontWeight.Normal
     ),
+    val xAxisLabelRotation: Float = -45f,
     val titleTextStyle: TextStyle = TextStyle(
         color = Color.Black,
         fontSize = 14.sp,
         fontWeight = FontWeight.Bold
     ),
-    val tooltipBackgroundColor: Color = Color.White.copy(alpha = 0.9f),
+    val tooltipBackgroundColor: Color = Color.White,
     val tooltipBorderColor: Color = Color.LightGray,
     val tooltipLabelTextStyle: TextStyle = TextStyle(
         color = Color.Black,
@@ -39,5 +40,5 @@ data class ScatterChartStyleConfig(
     val padding: Dp = 32.dp,
     val tooltipAutoDismissMs: Long? = null,
     val showTooltipCloseButton: Boolean = false,
-    val animationDuration: Int = 1000
+    val animationDuration: Int = 500
 )

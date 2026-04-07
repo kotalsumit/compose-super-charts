@@ -211,6 +211,8 @@ fun LineChartScreen(onBack: () -> Unit) {
     var legendPos by remember { mutableStateOf(LegendPosition.TOP) }
     var xAxisRotation by remember { mutableStateOf(-45f) }
     var yAxisColor by remember { mutableStateOf(Color.LightGray) }
+    var showTooltipClose by remember { mutableStateOf(true) }
+    var autoDismiss by remember { mutableStateOf<Long?>(null) }
 
     val colors = listOf(Color(0xFF42A5F5), Color(0xFFEF5350), Color(0xFF66BB6A), Color(0xFFFFA726), Color(0xFFAB47BC))
     val lineNames = listOf("Product A", "Product B", "Product C", "Product D", "Product E")
@@ -245,7 +247,9 @@ fun LineChartScreen(onBack: () -> Unit) {
         legendPosition = legendPos,
         xAxisLabelRotation = xAxisRotation,
         yAxisDividerColor = yAxisColor,
-        xAxisDividerColor = yAxisColor
+        xAxisDividerColor = yAxisColor,
+        showTooltipCloseButton = showTooltipClose,
+        tooltipAutoDismissMs = autoDismiss
     )
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
@@ -283,6 +287,30 @@ fun LineChartScreen(onBack: () -> Unit) {
                 )
             }
         }
+
+        Text("Tooltip Controls", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = showTooltipClose, onCheckedChange = { showTooltipClose = it })
+            Text("Show Close Button")
+        }
+        
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 4.dp)) {
+            listOf(null, 2000L, 5000L).forEach { ms ->
+                FilterChip(
+                    selected = autoDismiss == ms,
+                    onClick = { autoDismiss = ms },
+                    label = { Text(if (ms == null) "No Auto-Close" else "${ms / 1000}s") }
+                )
+            }
+        }
+
+        Text("X-Axis Label Rotation", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 16.dp))
+        Slider(
+            value = xAxisRotation,
+            onValueChange = { xAxisRotation = it },
+            valueRange = -90f..90f,
+            modifier = Modifier.fillMaxWidth()
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
 

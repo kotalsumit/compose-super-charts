@@ -26,5 +26,5 @@ data class PyramidChartStyleConfig(
     val legendTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Normal),
     val tooltipAutoDismissMs: Long? = null,
     val showTooltipCloseButton: Boolean = false,
-    val animationDuration: Int = 1000
+    val animationDuration: Int = 500
 )

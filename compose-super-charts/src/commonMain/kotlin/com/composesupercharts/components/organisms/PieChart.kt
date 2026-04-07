@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.semantics.semantics
 import com.composesupercharts.utils.ChartAccessibility.pieChartDescription
 import androidx.compose.foundation.layout.Box
@@ -43,7 +44,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.composesupercharts.components.atoms.ChartLegendShape
 import com.composesupercharts.components.atoms.ChartText
-import com.composesupercharts.models.LegendPosition
 import com.composesupercharts.models.PieChartData
 import com.composesupercharts.models.PieChartStyleConfig
 import kotlin.math.cos
@@ -51,8 +51,12 @@ import kotlin.math.sin
 import kotlin.math.PI
 import kotlin.math.atan2
 import com.composesupercharts.components.molecules.TooltipBubble
+import com.composesupercharts.components.molecules.UniversalLegend
+import com.composesupercharts.components.molecules.LegendItemData
+import com.composesupercharts.components.molecules.LegendShape
 import com.composesupercharts.models.TooltipBubbleData
 import com.composesupercharts.models.ChartStyleConfig
+import com.composesupercharts.models.LegendPosition
 
 @Composable
 fun PieChart(
@@ -84,7 +88,13 @@ fun PieChart(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (config.legendPosition == LegendPosition.TOP) {
-            PieLegend(data = data, config = config)
+            UniversalLegend(
+                items = data.slices.map { LegendItemData(it.label, it.color) },
+                textStyle = config.legendTextStyle,
+                shape = LegendShape.CIRCLE,
+                shapeSize = config.legendShapeSize,
+                itemSpacing = config.legendItemSpacing
+            )
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -243,18 +253,25 @@ fun PieChart(
                     startAngle += (data.slices[i].value / totalValue) * 360f
                 }
                 val midAngle = startAngle + sweepAngle / 2
-                val radius = config.chartSize.value * 2.5f 
-                
                 val midAngleRad = midAngle.toDouble() * PI / 180.0
-                val offsetX = (radius * config.tooltipOffsetRatio) * cos(midAngleRad).toFloat()
-                val offsetY = (radius * config.tooltipOffsetRatio) * sin(midAngleRad).toFloat()
+                val radiusPx = (config.chartSize.value / 2f) 
+                val offsetX = (radiusPx * config.tooltipOffsetRatio) * cos(midAngleRad).toFloat()
+                val offsetY = (radiusPx * config.tooltipOffsetRatio) * sin(midAngleRad).toFloat()
 
-                Box(modifier = Modifier.offset(x = offsetX.dp, y = offsetY.dp)) {
+                val isLeftEdge = midAngle > 100f && midAngle < 260f
+                val isRightEdge = midAngle < 80f || midAngle > 280f
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .offset(x = offsetX.dp, y = offsetY.dp)
+                        .zIndex(15f)
+                ) {
                     TooltipBubble(
                         xPosition = 0f,
                         labels = slice.tooltipData ?: listOf(TooltipBubbleData(slice.label, slice.value.toInt().toString())),
-                        isFirst = index == 0,
-                        isLast = index == data.slices.lastIndex,
+                        isFirst = isLeftEdge,
+                        isLast = isRightEdge,
                         config = ChartStyleConfig(
                             lines = emptyList(),
                             tooltipBackgroundColor = config.tooltipBackgroundColor,
@@ -273,34 +290,16 @@ fun PieChart(
 
         if (config.legendPosition == LegendPosition.BOTTOM) {
             Spacer(modifier = Modifier.height(16.dp))
-            PieLegend(data = data, config = config)
+            UniversalLegend(
+                items = data.slices.map { LegendItemData(it.label, it.color) },
+                textStyle = config.legendTextStyle,
+                shape = LegendShape.CIRCLE,
+                shapeSize = config.legendShapeSize,
+                itemSpacing = config.legendItemSpacing
+            )
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun PieLegend(data: PieChartData, config: PieChartStyleConfig) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        data.slices.forEach { slice ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = config.legendItemSpacing / 2)
-            ) {
-                ChartLegendShape(
-                    modifier = Modifier.size(config.legendShapeSize),
-                    color = slice.color,
-                    pointRadius = config.legendShapeRadius
-                )
-                Spacer(Modifier.size(4.dp))
-                ChartText(text = slice.label, style = config.legendTextStyle)
-            }
-        }
-    }
-}
 
 private fun Float.toDegrees() = (this * 180f / PI.toFloat())

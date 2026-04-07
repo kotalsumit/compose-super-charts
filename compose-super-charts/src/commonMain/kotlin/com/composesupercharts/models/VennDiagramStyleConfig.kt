@@ -32,5 +32,5 @@ data class VennDiagramStyleConfig(
     val circleRadiusScale: Float = 0.9f,
     val tooltipAutoDismissMs: Long? = null,
     val showTooltipCloseButton: Boolean = false,
-    val animationDuration: Int = 1000
+    val animationDuration: Int = 500
 )

@@ -45,5 +45,5 @@ data class ColumnChartStyleConfig(
     val tooltipAutoDismissMs: Long? = null,
     val showTooltipCloseButton: Boolean = false,
     val xAxisLabelRotation: Float = -45f,
-    val animationDuration: Int = 1000
+    val animationDuration: Int = 500
 )

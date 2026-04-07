@@ -3,15 +3,16 @@ package com.composesupercharts.components.molecules
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import com.composesupercharts.components.atoms.ChartSurface
@@ -113,52 +114,45 @@ fun TooltipBubble(
                     .layout { measurable, constraints ->
                         val placeable = measurable.measure(constraints)
                         layout(placeable.width, placeable.height) {
-                            val shift = when {
+                            val desiredShift = when {
                                 isFirst -> 0
                                 isLast -> -placeable.width
                                 else -> -(placeable.width / 2)
                             }
-                            placeable.placeRelative(shift, 0)
+                            
+                            // Prevent clipping by ensuring the tooltip stays within horizontal bounds
+                            // We use the constraints.maxWidth from the parent BoxWithConstraints if available,
+                            // but here we are in a sub-Box. We need to know the absolute xPosition.
+                            // Better approach: just use the shift to avoid negative absolute X.
+                            // But TooltipBubble doesn't know its absolute X unless we pass it.
+                            // Let's use the provided xPosition.
+                            
+                            var finalShift = desiredShift
+                            if (xPosition + finalShift < 0) {
+                                finalShift = -xPosition.toInt()
+                            }
+                            
+                            // Check right edge if possible. Since we don't have parentWidth here easily, 
+                            // we rely on isLast flag from the caller for now, but also 
+                            // we can check if the tooltip would be huge.
+                            
+                            placeable.placeRelative(finalShift, 0)
                         }
                     }
-                    .padding(horizontal = config.tooltipHorizontalPadding, vertical = config.tooltipVerticalPadding),
-                backgroundColor = config.tooltipBackgroundColor,
+                    .padding(horizontal = config.tooltipHorizontalPadding * 1.5f, vertical = config.tooltipVerticalPadding * 1.5f),
+                backgroundColor = if (config.tooltipBackgroundColor == Color.Unspecified) Color.White else config.tooltipBackgroundColor.copy(alpha = 1f),
                 borderColor = config.tooltipBorderColor,
                 elevation = config.tooltipElevation
             ) {
-                Box {
-                    if (config.showTooltipCloseButton) {
-                        Surface(
-                            color = config.tooltipBackgroundColor.copy(alpha = 0.9f),
-                            shape = CircleShape,
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .offset(x = 12.dp, y = (-12).dp)
-                                .size(24.dp)
-                                .zIndex(11f),
-                            shadowElevation = 2.dp,
-                            border = androidx.compose.foundation.BorderStroke(0.5.dp, config.tooltipBorderColor)
-                        ) {
-                            IconButton(
-                                onClick = onClose,
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Close Tooltip",
-                                    tint = config.tooltipLabelTextStyle.color.copy(alpha = 0.8f),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
-
+                Box(
+                    modifier = Modifier.padding(
+                        horizontal = config.tooltipHorizontalPadding,
+                        vertical = config.tooltipVerticalPadding
+                    )
+                ) {
                     Column(
                         horizontalAlignment = Alignment.Start,
-                        modifier = Modifier.padding(
-                            horizontal = config.tooltipHorizontalPadding / 2,
-                            vertical = config.tooltipVerticalPadding / 2
-                        )
+                        modifier = Modifier.padding(end = if (config.showTooltipCloseButton) 24.dp else 0.dp)
                     ) {
                         labels.forEachIndexed { index, labelData ->
                             Row(
@@ -178,6 +172,31 @@ fun TooltipBubble(
                                 ChartText(
                                     text = valStr,
                                     style = config.tooltipValueTextStyle
+                                )
+                            }
+                        }
+                    }
+
+                    if (config.showTooltipCloseButton) {
+                        Surface(
+                            color = config.tooltipBackgroundColor.copy(alpha = 0.95f),
+                            shape = CircleShape,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(20.dp)
+                                .zIndex(11f),
+                            shadowElevation = 2.dp,
+                            border = androidx.compose.foundation.BorderStroke(0.5.dp, config.tooltipBorderColor)
+                        ) {
+                            IconButton(
+                                onClick = onClose,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close Tooltip",
+                                    tint = config.tooltipLabelTextStyle.color.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(12.dp)
                                 )
                             }
                         }

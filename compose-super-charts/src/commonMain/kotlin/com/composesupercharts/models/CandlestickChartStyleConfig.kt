@@ -14,12 +14,19 @@ data class CandlestickChartStyleConfig(
     val bodyWidthRatio: Float = 0.8f,
     val axisColor: Color = Color.Gray,
     val axisThickness: Dp = 1.dp,
-    val labelTextStyle: TextStyle = TextStyle(
+    val xAxisLabelTextStyle: TextStyle = TextStyle(
         color = Color.Black,
         fontSize = 12.sp,
         fontWeight = FontWeight.Normal
     ),
-    val tooltipBackgroundColor: Color = Color.White.copy(alpha = 0.9f),
+    val yAxisLabelTextStyle: TextStyle = TextStyle(
+        color = Color.Gray,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Normal
+    ),
+    val yAxisWidth: Dp = 60.dp,
+    val xAxisLabelRotation: Float = -45f,
+    val tooltipBackgroundColor: Color = Color.White,
     val tooltipBorderColor: Color = Color.LightGray,
     val tooltipLabelTextStyle: TextStyle = TextStyle(
         color = Color.Black,
@@ -32,7 +39,9 @@ data class CandlestickChartStyleConfig(
         fontWeight = FontWeight.Bold
     ),
     val padding: Dp = 32.dp,
-    val animationDuration: Int = 1000,
+    val animationDuration: Int = 500,
     val tooltipAutoDismissMs: Long? = null,
-    val showTooltipCloseButton: Boolean = false
+    val showTooltipCloseButton: Boolean = false,
+    val isScrollable: Boolean = false,
+    val candleWidth: Dp = 16.dp
 )

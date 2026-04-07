@@ -13,6 +13,7 @@ data class BubbleChartStyleConfig(
     val maxBubbleRadius: Dp = 40.dp,
     val axisColor: Color = Color.LightGray,
     val axisLabelTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 10.sp, fontWeight = FontWeight.Normal),
+    val xAxisLabelRotation: Float = -45f,
     val gridLinesColor: Color = Color.LightGray.copy(alpha = 0.3f),
     val showGridLines: Boolean = true,
     val tooltipBackgroundColor: Color = Color.White,
@@ -23,5 +24,5 @@ data class BubbleChartStyleConfig(
     val padding: Dp = 16.dp,
     val tooltipAutoDismissMs: Long? = null,
     val showTooltipCloseButton: Boolean = false,
-    val animationDuration: Int = 1000
+    val animationDuration: Int = 500
 )

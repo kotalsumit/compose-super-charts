@@ -26,6 +26,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.composesupercharts.components.molecules.TooltipBubble
 import com.composesupercharts.models.*
+import androidx.compose.ui.Alignment
+import com.composesupercharts.utils.rotatedLayout
 
 @Composable
 fun ScatterChart(
@@ -53,167 +55,196 @@ fun ScatterChart(
     val scrollStateX = rememberScrollState()
     val scrollStateY = rememberScrollState()
 
-    BoxWithConstraints(modifier = modifier.padding(config.padding).semantics { scatterChartDescription(data) }) {
-        val baseWidth = constraints.maxWidth.toFloat()
-        val baseHeight = constraints.maxHeight.toFloat()
-        
-        val width = baseWidth * scaleX
-        val height = baseHeight * scaleY
+    val allPoints = data.series.flatMap { it.points }
+    val minX = allPoints.minOfOrNull { it.x } ?: 0f
+    val maxX = allPoints.maxOfOrNull { it.x } ?: 0f
+    val minY = allPoints.minOfOrNull { it.y } ?: 0f
+    val maxY = allPoints.maxOfOrNull { it.y } ?: 1f
+    val xRange = (maxX - minX).coerceAtLeast(0.01f)
+    val yRange = (maxY - minY).coerceAtLeast(0.01f)
 
-        val allPoints = data.series.flatMap { it.points }
-        val minX = allPoints.minOfOrNull { it.x } ?: 0f
-        val maxX = allPoints.maxOfOrNull { it.x } ?: 100f
-        val minY = allPoints.minOfOrNull { it.y } ?: 0f
-        val maxY = allPoints.maxOfOrNull { it.y } ?: 100f
+    Column(modifier = modifier.padding(config.padding).semantics { scatterChartDescription(data) }) {
+        BoxWithConstraints(modifier = Modifier.weight(1f)) {
+            val baseWidth = constraints.maxWidth.toFloat()
+            val baseHeight = constraints.maxHeight.toFloat()
+            
+            val width = baseWidth * scaleX
+            val height = baseHeight * scaleY
 
-        val xRange = (maxX - minX).coerceAtLeast(1f)
-        val yRange = (maxY - minY).coerceAtLeast(1f)
+            Box(modifier = Modifier.fillMaxSize()
+                .horizontalScroll(scrollStateX)
+                .verticalScroll(scrollStateY)
+            ) {
+                Column {
+                    Canvas(
+                        modifier = Modifier
+                            .requiredWidth(with(density) { width.toDp() })
+                            .requiredHeight(with(density) { height.toDp() })
+                            .pointerInput(data) {
+                                awaitEachGesture {
+                                    var zoom = 1f
+                                    var pastTouchSlop = false
+                                    val touchSlop = viewConfiguration.touchSlop
 
-        Box(modifier = Modifier.fillMaxSize()
-            .horizontalScroll(scrollStateX)
-            .verticalScroll(scrollStateY)
-        ) {
-            Canvas(
-                modifier = Modifier
-                    .requiredWidth(with(density) { width.toDp() })
-                    .requiredHeight(with(density) { height.toDp() })
-                    .pointerInput(data) {
-                        awaitEachGesture {
-                            var zoom = 1f
-                            var pastTouchSlop = false
-                            val touchSlop = viewConfiguration.touchSlop
+                                    do {
+                                        val event = awaitPointerEvent()
+                                        val isZooming = event.changes.size > 1
+                                        if (isZooming) {
+                                            val zoomChange = event.calculateZoom()
+                                            if (!pastTouchSlop) {
+                                                zoom *= zoomChange
+                                                val centroidSize = event.calculateCentroidSize(useCurrent = false)
+                                                val zoomMotion = kotlin.math.abs(1 - zoom) * centroidSize
+                                                if (zoomMotion > touchSlop) {
+                                                    pastTouchSlop = true
+                                                }
+                                            }
 
-                            do {
-                                val event = awaitPointerEvent()
-                                val isZooming = event.changes.size > 1
-                                if (isZooming) {
-                                    val zoomChange = event.calculateZoom()
-                                    if (!pastTouchSlop) {
-                                        zoom *= zoomChange
-                                        val centroidSize = event.calculateCentroidSize(useCurrent = false)
-                                        val zoomMotion = kotlin.math.abs(1 - zoom) * centroidSize
-                                        if (zoomMotion > touchSlop) {
-                                            pastTouchSlop = true
+                                            if (pastTouchSlop) {
+                                                scaleX = (scaleX * zoomChange).coerceIn(1f, 10f)
+                                                scaleY = (scaleY * zoomChange).coerceIn(1f, 10f)
+                                                event.changes.forEach { it.consume() }
+                                            }
                                         }
-                                    }
-
-                                    if (pastTouchSlop) {
-                                        scaleX = (scaleX * zoomChange).coerceIn(1f, 10f)
-                                        scaleY = (scaleY * zoomChange).coerceIn(1f, 10f)
-                                        event.changes.forEach { it.consume() }
-                                    }
-                                }
-                            } while (event.changes.any { it.pressed })
-                        }
-                    }
-                    .pointerInput(data) {
-                        detectTapGestures { tap ->
-                            tapOffset = tap
-                            var found: Pair<ScatterSeries, ScatterPoint>? = null
-                            data.series.forEach { series ->
-                                series.points.forEach { point ->
-                                    val px = ((point.x - minX) / xRange) * width
-                                    val py = height - ((point.y - minY) / yRange) * height
-                                    val distance = (Offset(px, py) - tap).getDistance()
-                                    val radius = with(density) { (point.radius ?: config.defaultPointRadius.toPx()) }
-                                    if (distance <= radius * 2) {
-                                        found = series to point
-                                    }
+                                    } while (event.changes.any { it.pressed })
                                 }
                             }
-                            selectedPoint = if (selectedPoint == found) null else found
+                            .pointerInput(data) {
+                                detectTapGestures { tap ->
+                                    tapOffset = tap
+                                    var found: Pair<ScatterSeries, ScatterPoint>? = null
+                                    data.series.forEach { series ->
+                                        series.points.forEach { point ->
+                                            val px = ((point.x - minX) / xRange) * width
+                                            val py = height - ((point.y - minY) / yRange) * height
+                                            val distance = (Offset(px, py) - tap).getDistance()
+                                            val radius = with(density) { (point.radius ?: config.defaultPointRadius.toPx()) }
+                                            if (distance <= radius * 2) {
+                                                found = series to point
+                                            }
+                                        }
+                                    }
+                                    selectedPoint = if (selectedPoint == found) null else found
+                                }
+                            }
+                    ) {
+                        // Draw Axes
+                        drawLine(
+                            color = config.axisColor,
+                            start = Offset(0f, height),
+                            end = Offset(width, height),
+                            strokeWidth = config.axisThickness.toPx()
+                        )
+                        drawLine(
+                            color = config.axisColor,
+                            start = Offset(0f, 0f),
+                            end = Offset(0f, height),
+                            strokeWidth = config.axisThickness.toPx()
+                        )
+
+                        // Draw Grid Lines (simplified)
+                        if (config.showGridLines) {
+                            val gridCount = 5
+                            for (i in 1..gridCount) {
+                                val y = height - (i.toFloat() / gridCount) * height
+                                drawLine(
+                                    color = config.gridLineColor,
+                                    start = Offset(0f, y),
+                                    end = Offset(width, y),
+                                    strokeWidth = 1.dp.toPx()
+                                )
+                                
+                                val x = (i.toFloat() / gridCount) * width
+                                drawLine(
+                                    color = config.gridLineColor,
+                                    start = Offset(x, 0f),
+                                    end = Offset(x, height),
+                                    strokeWidth = 1.dp.toPx()
+                                )
+                            }
+                        }
+
+                        // Draw Points
+                        data.series.forEach { series ->
+                            series.points.forEach { point ->
+                                val px = ((point.x - minX) / xRange) * width
+                                val py = height - ((point.y - minY) / yRange) * height
+                                val radius = (point.radius ?: config.defaultPointRadius.toPx()) * animationProgress.value
+                                
+                                drawCircle(
+                                    color = (point.color ?: series.color).copy(alpha = 0.6f),
+                                    center = Offset(px, py),
+                                    radius = radius
+                                )
+                                drawCircle(
+                                    color = point.color ?: series.color,
+                                    center = Offset(px, py),
+                                    radius = radius,
+                                    style = Stroke(width = config.pointStrokeWidth.toPx())
+                                )
+                            }
                         }
                     }
-            ) {
-            // Draw Axes
-            drawLine(
-                color = config.axisColor,
-                start = Offset(0f, height),
-                end = Offset(width, height),
-                strokeWidth = config.axisThickness.toPx()
-            )
-            drawLine(
-                color = config.axisColor,
-                start = Offset(0f, 0f),
-                end = Offset(0f, height),
-                strokeWidth = config.axisThickness.toPx()
-            )
 
-            // Draw Grid Lines (simplified)
-            if (config.showGridLines) {
-                val gridCount = 5
-                for (i in 1..gridCount) {
-                    val y = height - (i.toFloat() / gridCount) * height
-                    drawLine(
-                        color = config.gridLineColor,
-                        start = Offset(0f, y),
-                        end = Offset(width, y),
-                        strokeWidth = 1.dp.toPx()
-                    )
-                    
-                    val x = (i.toFloat() / gridCount) * width
-                    drawLine(
-                        color = config.gridLineColor,
-                        start = Offset(x, 0f),
-                        end = Offset(x, height),
-                        strokeWidth = 1.dp.toPx()
-                    )
+                    // X-Axis Labels Row (Sampled)
+                    Row(
+                        modifier = Modifier.width(with(density) { width.toDp() }),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        val labelCount = 5
+                        for (i in 0..labelCount) {
+                            val normalizedX = i.toFloat() / labelCount
+                            val labelX = minX + (normalizedX * xRange)
+                            val centerX = normalizedX * width
+                            
+                            Box(
+                                modifier = Modifier.width(with(density) { (width / (labelCount + 1)).toDp() }).offset(x = with(density) { (centerX - (width / (labelCount + 1)) / 2).toDp() }),
+                                contentAlignment = Alignment.TopCenter
+                            ) {
+                                com.composesupercharts.components.atoms.ChartText(
+                                    text = String.format("%.1f", labelX),
+                                    style = config.labelTextStyle,
+                                    modifier = Modifier
+                                        .rotatedLayout(config.xAxisLabelRotation)
+                                        .padding(top = 4.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
-            // Draw Points
-            data.series.forEach { series ->
-                series.points.forEach { point ->
-                    val px = ((point.x - minX) / xRange) * width
-                    val py = height - ((point.y - minY) / yRange) * height
-                    val radius = (point.radius ?: config.defaultPointRadius.toPx()) * animationProgress.value
-                    
-                    drawCircle(
-                        color = (point.color ?: series.color).copy(alpha = 0.6f),
-                        center = Offset(px, py),
-                        radius = radius
-                    )
-                    drawCircle(
-                        color = point.color ?: series.color,
-                        center = Offset(px, py),
-                        radius = radius,
-                        style = Stroke(width = config.pointStrokeWidth.toPx())
+            selectedPoint?.let { selection ->
+                val series = selection.first
+                val point = selection.second
+                val px = ((point.x - minX) / xRange) * width
+                val py = height - ((point.y - minY) / yRange) * height
+                
+                Box(modifier = Modifier.offset(
+                    x = with(density) { px.toDp() },
+                    y = with(density) { py.toDp() - (point.radius?.toDp() ?: config.defaultPointRadius) - 8.dp }
+                )) {
+                    TooltipBubble(
+                        xPosition = 0f,
+                        labels = listOf(
+                            TooltipBubbleData(labelName = "Series", value = series.label),
+                            TooltipBubbleData(labelName = point.label ?: "Point", value = "X: ${point.x}, Y: ${point.y}")
+                        ),
+                        isFirst = selection.second == series.points.first(),
+                        isLast = selection.second == series.points.last(),
+                        config = ChartStyleConfig(
+                            lines = emptyList(),
+                            tooltipBackgroundColor = config.tooltipBackgroundColor,
+                            tooltipBorderColor = config.tooltipBorderColor,
+                            tooltipLabelTextStyle = config.tooltipLabelTextStyle,
+                            tooltipValueTextStyle = config.tooltipValueTextStyle,
+                            tooltipAutoDismissMs = config.tooltipAutoDismissMs,
+                            showTooltipCloseButton = config.showTooltipCloseButton
+                        ),
+                        onClose = { selectedPoint = null }
                     )
                 }
             }
         }
-
-        selectedPoint?.let { selection ->
-            val series = selection.first
-            val point = selection.second
-            val px = ((point.x - minX) / xRange) * width
-            val py = height - ((point.y - minY) / yRange) * height
-            
-            Box(modifier = Modifier.offset(
-                x = with(density) { px.toDp() },
-                y = with(density) { py.toDp() - (point.radius?.toDp() ?: config.defaultPointRadius) - 8.dp }
-            )) {
-                TooltipBubble(
-                    xPosition = 0f,
-                    labels = listOf(
-                        TooltipBubbleData(labelName = "Series", value = series.label),
-                        TooltipBubbleData(labelName = point.label ?: "Point", value = "X: ${point.x}, Y: ${point.y}")
-                    ),
-                    isFirst = false,
-                    isLast = false,
-                    config = ChartStyleConfig(
-                        lines = emptyList(),
-                        tooltipBackgroundColor = config.tooltipBackgroundColor,
-                        tooltipBorderColor = config.tooltipBorderColor,
-                        tooltipLabelTextStyle = config.tooltipLabelTextStyle,
-                        tooltipValueTextStyle = config.tooltipValueTextStyle,
-                        tooltipAutoDismissMs = config.tooltipAutoDismissMs,
-                        showTooltipCloseButton = config.showTooltipCloseButton
-                    ),
-                    onClose = { selectedPoint = null }
-                )
-            }
-        }
-    }
     }
 }

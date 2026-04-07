@@ -18,7 +18,8 @@ data class HeatmapChartStyleConfig(
         fontSize = 12.sp,
         fontWeight = FontWeight.Normal
     ),
-    val tooltipBackgroundColor: Color = Color.White.copy(alpha = 0.9f),
+    val xAxisLabelRotation: Float = -45f,
+    val tooltipBackgroundColor: Color = Color.White,
     val tooltipBorderColor: Color = Color.LightGray,
     val tooltipLabelTextStyle: TextStyle = TextStyle(
         color = Color.Black,
@@ -31,7 +32,7 @@ data class HeatmapChartStyleConfig(
         fontWeight = FontWeight.Bold
     ),
     val padding: Dp = 16.dp,
-    val animationDuration: Int = 1000,
+    val animationDuration: Int = 500,
     val tooltipAutoDismissMs: Long? = null,
     val showTooltipCloseButton: Boolean = false
 )

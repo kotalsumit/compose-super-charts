@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -46,6 +47,9 @@ import androidx.compose.ui.unit.dp
 import com.composesupercharts.components.atoms.ChartDivider
 import com.composesupercharts.components.atoms.ChartText
 import com.composesupercharts.components.molecules.TooltipBubble
+import com.composesupercharts.components.molecules.UniversalLegend
+import com.composesupercharts.components.molecules.LegendItemData
+import com.composesupercharts.components.molecules.LegendShape
 import com.composesupercharts.models.ChartStyleConfig
 import com.composesupercharts.models.ColumnChartData
 import com.composesupercharts.models.ColumnChartStyleConfig
@@ -75,7 +79,7 @@ fun ColumnChart(
     }
 
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
-    val maxOfY = remember(data, maxY) {
+    val maxOfY = remember(data, maxY, config.type) {
         val highest = data.points.maxOf { point ->
             if (config.type == ColumnChartType.STACKED) point.values.sum() else point.values.maxOrNull() ?: 1f
         }
@@ -109,17 +113,28 @@ fun ColumnChart(
         }
     ) {
         if (config.legendPosition == LegendPosition.TOP && legendLabels != null) {
-            ColumnChartLegend(labels = legendLabels, data = data, config = config)
+            UniversalLegend(
+                items = legendLabels.mapIndexed { index, label ->
+                    LegendItemData(
+                        label = label,
+                        color = data.points.firstOrNull { it.colors.size > index }?.colors?.get(index) ?: Color.Gray
+                    )
+                },
+                textStyle = config.legendTextStyle,
+                shape = LegendShape.ROUNDED_SQUARE,
+                shapeSize = config.legendBarWidth, // using existing config for backward compatibility
+                itemSpacing = config.legendItemSpacing
+            )
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        Row(modifier = Modifier.padding(horizontal = 0.dp)) {
-            Column {
+        Row(modifier = Modifier.padding(horizontal = 0.dp).height(config.chartHeight)) {
+            Column(modifier = Modifier.fillMaxHeight()) {
                 if (config.xAxisPosition == XAxisPosition.TOP) {
                     Spacer(modifier = Modifier.height(config.xAxisHeight))
                 }
                 Column(
-                    modifier = Modifier.height(config.chartHeight).padding(end = 8.dp),
+                    modifier = Modifier.weight(1f).padding(end = 8.dp),
                     verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
                 ) {
                     for (i in maxY downTo 0) {
@@ -135,11 +150,11 @@ fun ColumnChart(
                 }
             }
 
-            BoxWithConstraints(modifier = Modifier.weight(1f).then(scrollModifier)) {
+            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxHeight().then(scrollModifier)) {
                 val constraintsScope = this
                 val spacing = if (config.isScrollable || config.type == ColumnChartType.CLUSTERED) itemWidth else constraintsScope.maxWidth / data.points.size.coerceAtLeast(1)
 
-                Column {
+                Column(modifier = Modifier.fillMaxHeight()) {
                     if (config.xAxisPosition == XAxisPosition.TOP) {
                         Row(modifier = Modifier.width(if (config.isScrollable || config.type == ColumnChartType.CLUSTERED) chartContentWidth else constraintsScope.maxWidth).height(config.xAxisHeight)) {
                             data.points.forEach { point ->
@@ -159,7 +174,7 @@ fun ColumnChart(
 
                     Box(
                         modifier = Modifier.width(if (config.isScrollable || config.type == ColumnChartType.CLUSTERED) chartContentWidth else constraintsScope.maxWidth)
-                            .height(config.chartHeight)
+                            .weight(1f)
                             .pointerInput(data) {
                                 awaitEachGesture {
                                     var zoom = 1f
@@ -198,7 +213,7 @@ fun ColumnChart(
                                 }
                             }
                     ) {
-                        Canvas(modifier = Modifier.fillMaxWidth().height(config.chartHeight)) {
+                        Canvas(modifier = Modifier.fillMaxWidth().fillMaxHeight()) {
                             val canvasSpacing = size.width / data.points.size
                             val progress = animationProgress.value
 
@@ -294,33 +309,19 @@ fun ColumnChart(
 
         if (config.legendPosition == LegendPosition.BOTTOM && legendLabels != null) {
             Spacer(modifier = Modifier.height(24.dp))
-            ColumnChartLegend(labels = legendLabels, data = data, config = config)
+            UniversalLegend(
+                items = legendLabels.mapIndexed { index, label ->
+                    LegendItemData(
+                        label = label,
+                        color = data.points.firstOrNull { it.colors.size > index }?.colors?.get(index) ?: Color.Gray
+                    )
+                },
+                textStyle = config.legendTextStyle,
+                shape = LegendShape.ROUNDED_SQUARE,
+                shapeSize = config.legendBarWidth,
+                itemSpacing = config.legendItemSpacing
+            )
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ColumnChartLegend(labels: List<String>, data: ColumnChartData, config: ColumnChartStyleConfig) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
-    ) {
-        labels.forEachIndexed { index, label ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = config.legendItemSpacing / 2)
-            ) {
-                androidx.compose.foundation.Canvas(modifier = Modifier.size(config.legendBarWidth, config.legendBarHeight)) {
-                    drawRoundRect(
-                        color = data.points.firstOrNull { it.colors.size > index }?.colors?.get(index) ?: Color.Gray,
-                        cornerRadius = CornerRadius(config.legendBarRadius.toPx(), config.legendBarRadius.toPx())
-                    )
-                }
-                Spacer(modifier = Modifier.size(4.dp))
-                ChartText(text = label, style = config.legendTextStyle)
-            }
-        }
-    }
-}

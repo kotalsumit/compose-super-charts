@@ -29,7 +29,7 @@ data class GaugeChartStyleConfig(
         fontSize = 10.sp,
         fontWeight = FontWeight.Normal
     ),
-    val animationDuration: Int = 1000,
+    val animationDuration: Int = 500,
     val startAngle: Float = 180f,
     val sweepAngle: Float = 180f,
     val padding: Dp = 16.dp,

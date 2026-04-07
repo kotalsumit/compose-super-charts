@@ -35,8 +35,12 @@ fun CandlestickChartScreen(onBack: () -> Unit) {
         }
     }
 
+    var isScrollable by remember { mutableStateOf(false) }
+
     val styleConfig = CandlestickChartStyleConfig(
         padding = 40.dp,
+        isScrollable = isScrollable,
+        candleWidth = 24.dp,
         tooltipBackgroundColor = MaterialTheme.colorScheme.surface,
         tooltipLabelTextStyle = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
         tooltipValueTextStyle = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
@@ -67,6 +71,13 @@ fun CandlestickChartScreen(onBack: () -> Unit) {
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = isScrollable, onCheckedChange = { isScrollable = it })
+            Text("Scrollable", style = MaterialTheme.typography.bodyLarge)
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Text(
             "Visualizing Open, High, Low, and Close prices. Green indicates bullish price action, Red indicates bearish.",

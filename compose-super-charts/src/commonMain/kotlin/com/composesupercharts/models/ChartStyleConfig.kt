@@ -79,8 +79,8 @@ data class ChartStyleConfig(
     val yAxisLabelTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Normal),
     val tooltipLabelTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Normal),
     val tooltipValueTextStyle: TextStyle = TextStyle(color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Medium),
-    val tooltipBackgroundColor: Color = Color(0xFAFFFFFF),
-    val tooltipBorderColor: Color = Color(0x15000000),
+    val tooltipBackgroundColor: Color = Color(0xFFFFFFFF),
+    val tooltipBorderColor: Color = Color(0xFFE0E0E0),
     val tooltipElevation: Dp = 6.dp,
     val legendPosition: LegendPosition = LegendPosition.TOP,
     val legendTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Normal),
@@ -106,5 +106,5 @@ data class ChartStyleConfig(
     val xAxisLabelColor: Color = Color.Gray,
     val tooltipAutoDismissMs: Long? = null,
     val showTooltipCloseButton: Boolean = false,
-    val animationDuration: Int = 1000
+    val animationDuration: Int = 500
 )
