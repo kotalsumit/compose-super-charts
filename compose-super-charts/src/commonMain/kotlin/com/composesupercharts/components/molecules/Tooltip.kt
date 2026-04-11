@@ -1,17 +1,12 @@
 package com.composesupercharts.components.molecules
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,7 +19,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.composesupercharts.models.ChartPointData
@@ -35,7 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
 
@@ -107,7 +100,9 @@ fun TooltipBubble(
         }
     }
 
-    Box(modifier = Modifier.zIndex(10f)) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth().zIndex(10f)) {
+        val parentWidth = constraints.maxWidth
+
         Box(modifier = Modifier.offset { IntOffset(xPosition.toInt(), -10) }) {
             ChartSurface(
                 modifier = Modifier
@@ -119,27 +114,18 @@ fun TooltipBubble(
                                 isLast -> -placeable.width
                                 else -> -(placeable.width / 2)
                             }
-                            
-                            // Prevent clipping by ensuring the tooltip stays within horizontal bounds
-                            // We use the constraints.maxWidth from the parent BoxWithConstraints if available,
-                            // but here we are in a sub-Box. We need to know the absolute xPosition.
-                            // Better approach: just use the shift to avoid negative absolute X.
-                            // But TooltipBubble doesn't know its absolute X unless we pass it.
-                            // Let's use the provided xPosition.
-                            
-                            var finalShift = desiredShift
-                            if (xPosition + finalShift < 0) {
-                                finalShift = -xPosition.toInt()
+
+                            val minShift = -xPosition.toInt()
+                            val maxShift = parentWidth - xPosition.toInt() - placeable.width
+                            val finalShift = if (maxShift < minShift) {
+                                minShift
+                            } else {
+                                desiredShift.coerceIn(minShift, maxShift)
                             }
-                            
-                            // Check right edge if possible. Since we don't have parentWidth here easily, 
-                            // we rely on isLast flag from the caller for now, but also 
-                            // we can check if the tooltip would be huge.
-                            
+
                             placeable.placeRelative(finalShift, 0)
                         }
-                    }
-                    .padding(horizontal = config.tooltipHorizontalPadding * 1.5f, vertical = config.tooltipVerticalPadding * 1.5f),
+                    },
                 backgroundColor = if (config.tooltipBackgroundColor == Color.Unspecified) Color.White else config.tooltipBackgroundColor.copy(alpha = 1f),
                 borderColor = config.tooltipBorderColor,
                 elevation = config.tooltipElevation
@@ -154,7 +140,7 @@ fun TooltipBubble(
                         horizontalAlignment = Alignment.Start,
                         modifier = Modifier.padding(end = if (config.showTooltipCloseButton) 24.dp else 0.dp)
                     ) {
-                        labels.forEachIndexed { index, labelData ->
+                        labels.forEach { labelData ->
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(vertical = 4.dp)
