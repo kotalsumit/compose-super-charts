@@ -25,6 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.composesupercharts.components.atoms.ChartDivider
 import com.composesupercharts.components.atoms.ChartText
@@ -45,6 +47,7 @@ fun BarChart(
 ) {
     if (data.points.isEmpty()) return
     val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
 
     val animationProgress = remember { Animatable(0f) }
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -58,6 +61,7 @@ fun BarChart(
 
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     var tapOffset by remember { mutableStateOf(Offset.Zero) }
+    var hiddenSeriesIndexes by remember { mutableStateOf<Set<Int>>(emptySet()) }
 
     LaunchedEffect(data) {
         selectedIndex = null
@@ -107,7 +111,11 @@ fun BarChart(
                 textStyle = config.legendTextStyle,
                 shape = LegendShape.ROUNDED_SQUARE,
                 shapeSize = config.legendBarWidth,
-                itemSpacing = config.legendItemSpacing
+                itemSpacing = config.legendItemSpacing,
+                hiddenItemIndexes = hiddenSeriesIndexes,
+                onItemClick = if (config.allowLegendToggle) { index ->
+                    hiddenSeriesIndexes = if (index in hiddenSeriesIndexes) hiddenSeriesIndexes - index else hiddenSeriesIndexes + index
+                } else null
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -178,6 +186,7 @@ fun BarChart(
                                 
                                 when (config.type) {
                                     BarChartType.STANDARD -> {
+                                        if (0 in hiddenSeriesIndexes) return@forEachIndexed
                                         val value = (point.values.getOrNull(0) ?: 0f) * progress
                                         val barWidth = (value / maxOfX) * size.width
                                         drawRoundRect(
@@ -186,13 +195,23 @@ fun BarChart(
                                             size = Size(barWidth, config.barThickness.toPx()),
                                             cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
                                         )
+                                        if (config.showValueLabels) {
+                                            val raw = point.values.getOrNull(0) ?: 0f
+                                            val label = config.valueFormatter?.invoke(raw) ?: raw.toInt().toString()
+                                            val layout = textMeasurer.measure(label, config.xAxisLabelTextStyle)
+                                            drawText(layout, topLeft = Offset(barWidth + 4.dp.toPx(), centerY - layout.size.height / 2))
+                                        }
                                     }
                                     BarChartType.CLUSTERED -> {
                                         val barThicknessPx = config.barThickness.toPx()
                                         val clusterSpacingPx = config.clusterSpacing.toPx()
                                         val clusterThickness = (barThicknessPx * point.values.size) + (clusterSpacingPx * (point.values.size - 1))
                                         var currentY = centerY - clusterThickness / 2
-                                        point.values.forEachIndexed { valIdx, rawValue ->
+                                        point.values.forEachIndexed valueLoop@{ valIdx, rawValue ->
+                                            if (valIdx in hiddenSeriesIndexes) {
+                                                currentY += barThicknessPx + clusterSpacingPx
+                                                return@valueLoop
+                                            }
                                             val value = rawValue * progress
                                             val barWidth = (value / maxOfX) * size.width
                                             drawRoundRect(
@@ -201,13 +220,19 @@ fun BarChart(
                                                 size = Size(barWidth, barThicknessPx),
                                                 cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
                                             )
+                                            if (config.showValueLabels) {
+                                                val label = config.valueFormatter?.invoke(rawValue) ?: rawValue.toInt().toString()
+                                                val layout = textMeasurer.measure(label, config.xAxisLabelTextStyle)
+                                                drawText(layout, topLeft = Offset(barWidth + 4.dp.toPx(), currentY + barThicknessPx / 2 - layout.size.height / 2))
+                                            }
                                             currentY += barThicknessPx + clusterSpacingPx
                                         }
                                     }
                                     BarChartType.STACKED -> {
                                         val barThicknessPx = config.barThickness.toPx()
                                         var currentX = 0f
-                                        point.values.forEachIndexed { valIdx, rawValue ->
+                                        point.values.forEachIndexed valueLoop@{ valIdx, rawValue ->
+                                            if (valIdx in hiddenSeriesIndexes) return@valueLoop
                                             val value = rawValue * progress
                                             val barWidth = (value / maxOfX) * size.width
                                             drawRect(
@@ -215,6 +240,11 @@ fun BarChart(
                                                 topLeft = Offset(currentX, centerY - barThicknessPx / 2),
                                                 size = Size(barWidth, barThicknessPx)
                                             )
+                                            if (config.showValueLabels && barWidth > 22.dp.toPx()) {
+                                                val label = config.valueFormatter?.invoke(rawValue) ?: rawValue.toInt().toString()
+                                                val layout = textMeasurer.measure(label, config.xAxisLabelTextStyle)
+                                                drawText(layout, topLeft = Offset(currentX + barWidth / 2 - layout.size.width / 2, centerY - layout.size.height / 2))
+                                            }
                                             currentX += barWidth
                                         }
                                     }
@@ -229,18 +259,25 @@ fun BarChart(
                             
                             val barValue = if (config.type == BarChartType.STACKED) point.values.sum() else point.values.maxOrNull() ?: 0f
                             val barWidthPx = (barValue / maxOfX) * chartWidth
+                            val tooltipOffsetY = if (index >= data.points.size / 2) {
+                                centerY - with(density) { 112.dp.toPx() }
+                            } else {
+                                centerY + with(density) { 12.dp.toPx() }
+                            }
 
                             Box(modifier = Modifier
                                 .offset(
                                     x = 0.dp,
-                                    y = with(density) { (centerY).toDp() - 40.dp }
+                                    y = with(density) { tooltipOffsetY.coerceAtLeast(0f).toDp() }
                                 )
                                 .fillMaxWidth()
                                 .zIndex(15f)
                             ) {
                                 TooltipBubble(
                                     xPosition = barWidthPx,
-                                    labels = point.tooltipData ?: point.values.mapIndexed { idx, v -> TooltipBubbleData(legendLabels?.getOrNull(idx) ?: "Value", v.toInt().toString()) },
+                                    labels = point.tooltipData ?: point.values.mapIndexedNotNull { idx, v ->
+                                        if (idx in hiddenSeriesIndexes) null else TooltipBubbleData(legendLabels?.getOrNull(idx) ?: "Value", config.valueFormatter?.invoke(v) ?: v.toInt().toString())
+                                    },
                                     isFirst = index == 0,
                                     isLast = barWidthPx > chartWidth * 0.5f,
                                     config = ChartStyleConfig(
@@ -294,7 +331,11 @@ fun BarChart(
                 textStyle = config.legendTextStyle,
                 shape = LegendShape.ROUNDED_SQUARE,
                 shapeSize = config.legendBarWidth,
-                itemSpacing = config.legendItemSpacing
+                itemSpacing = config.legendItemSpacing,
+                hiddenItemIndexes = hiddenSeriesIndexes,
+                onItemClick = if (config.allowLegendToggle) { index ->
+                    hiddenSeriesIndexes = if (index in hiddenSeriesIndexes) hiddenSeriesIndexes - index else hiddenSeriesIndexes + index
+                } else null
             )
         }
     }
@@ -317,4 +358,3 @@ private fun YAxisLabels(data: BarChartData, config: BarChartStyleConfig, height:
         }
     }
 }
-
