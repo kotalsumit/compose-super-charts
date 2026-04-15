@@ -21,8 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.composesupercharts.components.atoms.ChartDivider
@@ -37,7 +35,6 @@ fun CandlestickChart(
 ) {
     if (data.entries.isEmpty()) return
 
-    val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val animationProgress = remember { Animatable(0f) }
 
@@ -57,11 +54,13 @@ fun CandlestickChart(
     BoxWithConstraints(modifier = modifier.semantics { candlestickChartDescription(data) }) {
         val baseWidth = constraints.maxWidth.toFloat()
         val baseHeight = constraints.maxHeight.toFloat()
-        
+        val yAxisWidthPx = with(density) { config.yAxisWidth.toPx() }
+        val plotBaseWidth = (baseWidth - yAxisWidthPx).coerceAtLeast(1f)
+
         val width = if (config.isScrollable) {
-            with(density) { (config.candleWidth * data.entries.size).toPx() }.coerceAtLeast(baseWidth)
+            with(density) { (config.candleWidth * data.entries.size).toPx() }.coerceAtLeast(plotBaseWidth)
         } else {
-            baseWidth * scaleX
+            plotBaseWidth * scaleX
         }
         
         val height = baseHeight
@@ -92,7 +91,13 @@ fun CandlestickChart(
                 Spacer(modifier = Modifier.height(48.dp))
             }
 
-            Box(modifier = Modifier.weight(1f).fillMaxHeight().horizontalScroll(scrollState)) {
+            val scrollModifier = if (config.isScrollable || scaleX > 1f) {
+                Modifier.horizontalScroll(scrollState)
+            } else {
+                Modifier
+            }
+
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().then(scrollModifier)) {
                 Column {
                     Canvas(
                         modifier = Modifier
@@ -221,6 +226,7 @@ fun CandlestickChart(
                                 tooltipBorderColor = config.tooltipBorderColor,
                                 tooltipLabelTextStyle = config.tooltipLabelTextStyle,
                                 tooltipValueTextStyle = config.tooltipValueTextStyle,
+                                tooltipAutoDismissMs = config.tooltipAutoDismissMs,
                                 showTooltipCloseButton = config.showTooltipCloseButton
                             ),
                             onClose = { selectedIndex = null }
