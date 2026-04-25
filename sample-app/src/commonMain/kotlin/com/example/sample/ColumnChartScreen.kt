@@ -5,7 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +23,8 @@ fun ColumnChartScreen(onBack: () -> Unit) {
     var barCountPerPoint by remember { mutableStateOf(3) }
     var isScrollable by remember { mutableStateOf(false) }
     var legendPosition by remember { mutableStateOf(LegendPosition.TOP) }
+    var showValueLabels by remember { mutableStateOf(false) }
+    var allowLegendToggle by remember { mutableStateOf(true) }
 
     val colors = listOf(
         Color(0xFF42A5F5), Color(0xFFEF5350), Color(0xFF66BB6A), Color(0xFFFFA726), Color(0xFFAB47BC)
@@ -43,23 +45,24 @@ fun ColumnChartScreen(onBack: () -> Unit) {
         legendPosition = legendPosition,
         barWidth = 20.dp,
         barSpacing = 8.dp,
+        showValueLabels = showValueLabels,
+        allowLegendToggle = allowLegendToggle,
+        valueFormatter = { it.toInt().toString() },
         tooltipBackgroundColor = MaterialTheme.colorScheme.surface,
         tooltipLabelTextStyle = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
         tooltipValueTextStyle = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
     )
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Column Chart Demo", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        ChartScreenHeader(
+            title = "Column Chart Demo",
+            description = "Vertical category comparison with standard, clustered, stacked, and scrollable modes.",
+            onBack = onBack
+        )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(8.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
@@ -97,6 +100,16 @@ fun ColumnChartScreen(onBack: () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(checked = isScrollable || chartType == ColumnChartType.CLUSTERED, onCheckedChange = { isScrollable = it }, enabled = chartType != ColumnChartType.CLUSTERED)
             Text("Scrollable")
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = showValueLabels, onCheckedChange = { showValueLabels = it })
+            Text("Value labels")
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = allowLegendToggle, onCheckedChange = { allowLegendToggle = it })
+            Text("Tap legend to hide/show series")
         }
     }
 }

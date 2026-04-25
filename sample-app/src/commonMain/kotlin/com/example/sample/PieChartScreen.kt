@@ -5,7 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +26,7 @@ fun PieChartScreen(onBack: () -> Unit) {
     var startAngle by remember { mutableStateOf(-90f) }
     var isSpie by remember { mutableStateOf(false) }
     var isExploded by remember { mutableStateOf(false) }
+    var showCenterLabel by remember { mutableStateOf(true) }
 
     val colors = listOf(
         Color(0xFF42A5F5), Color(0xFFEF5350), Color(0xFF66BB6A), Color(0xFFFFA726), Color(0xFFAB47BC),
@@ -49,23 +50,24 @@ fun PieChartScreen(onBack: () -> Unit) {
         sliceSpacing = sliceSpacing,
         startAngle = startAngle,
         chartSize = 280.dp,
+        centerValue = if (showCenterLabel) dataSlices.sumOf { it.value.toDouble() }.toInt().toString() else null,
+        centerLabel = if (showCenterLabel) "Total" else null,
+        valueFormatter = { it.toInt().toString() },
         tooltipBackgroundColor = MaterialTheme.colorScheme.surface,
         tooltipLabelTextStyle = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
         tooltipValueTextStyle = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
     )
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Pie Chart Demo", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        ChartScreenHeader(
+            title = "Pie Chart Demo",
+            description = "Part-to-whole chart with doughnut mode, slice offsets, legends, and center labels.",
+            onBack = onBack
+        )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(8.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
@@ -104,6 +106,11 @@ fun PieChartScreen(onBack: () -> Unit) {
                 onClick = { isExploded = !isExploded },
                 label = { Text("Exploded") }
             )
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = showCenterLabel, onCheckedChange = { showCenterLabel = it })
+            Text("Center label")
         }
     }
 }

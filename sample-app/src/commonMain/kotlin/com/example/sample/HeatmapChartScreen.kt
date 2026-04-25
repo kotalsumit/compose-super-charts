@@ -5,7 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,17 +41,15 @@ fun HeatmapChartScreen(onBack: () -> Unit) {
     )
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Heatmap Demo", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        ChartScreenHeader(
+            title = "Heatmap Demo",
+            description = "Color intensity grid for spotting density, frequency, and category patterns.",
+            onBack = onBack
+        )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(8.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {

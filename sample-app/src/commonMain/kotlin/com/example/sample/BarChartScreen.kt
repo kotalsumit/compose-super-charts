@@ -5,7 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +22,8 @@ fun BarChartScreen(onBack: () -> Unit) {
     var pointCount by remember { mutableStateOf(5) }
     var barCountPerPoint by remember { mutableStateOf(3) }
     var legendPosition by remember { mutableStateOf(LegendPosition.BOTTOM) }
+    var showValueLabels by remember { mutableStateOf(false) }
+    var allowLegendToggle by remember { mutableStateOf(true) }
 
     val colors = listOf(
         Color(0xFF42A5F5), Color(0xFFEF5350), Color(0xFF66BB6A), Color(0xFFFFA726), Color(0xFFAB47BC)
@@ -41,23 +43,24 @@ fun BarChartScreen(onBack: () -> Unit) {
         legendPosition = legendPosition,
         barThickness = 16.dp,
         barSpacing = 8.dp,
+        showValueLabels = showValueLabels,
+        allowLegendToggle = allowLegendToggle,
+        valueFormatter = { it.toInt().toString() },
         tooltipBackgroundColor = MaterialTheme.colorScheme.surface,
         tooltipLabelTextStyle = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
         tooltipValueTextStyle = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
     )
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Back") }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Bar Chart Demo", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
+        ChartScreenHeader(
+            title = "Bar Chart Demo",
+            description = "Horizontal bars for comparing categories with standard, clustered, and stacked layouts.",
+            onBack = onBack
+        )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(8.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
@@ -90,6 +93,16 @@ fun BarChartScreen(onBack: () -> Unit) {
         if (chartType != BarChartType.STANDARD) {
             Text("Bars per Point: $barCountPerPoint", style = MaterialTheme.typography.labelLarge)
             Slider(value = barCountPerPoint.toFloat(), onValueChange = { barCountPerPoint = it.toInt() }, valueRange = 1f..5f)
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = showValueLabels, onCheckedChange = { showValueLabels = it })
+            Text("Value labels")
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = allowLegendToggle, onCheckedChange = { allowLegendToggle = it })
+            Text("Tap legend to hide/show series")
         }
     }
 }
