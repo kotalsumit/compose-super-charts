@@ -1,89 +1,178 @@
-# 📊 Compose Super Charts
+# Compose Super Charts
 
-[![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-blue.svg?style=flat&logo=kotlin)](https://kotlinlang.org/docs/multiplatform.html)
-[![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-orange.svg?style=flat&logo=jetpack-compose)](https://www.jetbrains.com/lp/compose-multiplatform/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+Compose Super Charts is a Kotlin Multiplatform charting library built with Compose. The goal is simple: keep the chart APIs easy to read, keep styling in configuration objects, and make the same chart components usable from Android, iOS, and desktop targets.
 
-A polished, highly customizable charting library for **Compose Multiplatform** (Android, iOS, Desktop). Built with love and Atomic Design principles.
+The project is still moving quickly, so treat the API as alpha. The sample app is the best place to check current behavior before depending on a chart in production.
 
-> **Note**: This library is currently in **Alpha**. We're actively refining the API and adding more chart types. Feedback is very welcome!
+## What Is Included
 
----
+### Chart Types
 
-## Why Super Charts?
+| Chart | Current support |
+| --- | --- |
+| Line chart | Multiple series, solid/dashed lines, solid/hollow points, optional gradient fill, tappable legends, tooltips, horizontal scrolling, x-axis label rotation, value unit formatting |
+| Area chart | Line chart API with area fill enabled by default |
+| Combined chart | Column and line values in one chart for quick comparison |
+| Range chart | Horizontal interval/range bars for timelines, schedules, and min/max values |
+| Column chart | Standard, clustered, and stacked columns, top/bottom x-axis, tappable legends, value labels, scrolling, rotated x-axis labels, tooltips |
+| Bar chart | Standard, clustered, and stacked horizontal bars, left/right y-axis, tappable legends, value labels, scrolling, rotated labels, tooltips |
+| Pie chart | Pie and doughnut styles, center label/value, slice spacing, active slice offset, legends, labels, slice tooltips |
+| Gauge chart | Configurable arc range, value arc animation, needle, range labels, tooltip support |
+| Pyramid chart | Pyramid and funnel layouts, labels, legends, segment tooltips |
+| Radar chart | Single or multiple series, polygon/circle web, animated drawing, point tooltips |
+| Bubble chart | Bubble size/color data, scroll and zoom, grid lines, rotated x-axis labels, tooltips |
+| Scatter chart | Multiple series, per-point styling, scroll and zoom, grid lines, rotated x-axis labels, tooltips |
+| Heatmap | Row/column cell data, color interpolation, scroll and zoom, column label rotation, cell tooltips |
+| Candlestick chart | OHLC rendering, bullish/bearish styles, optional scrolling, configurable candle width, rotated x-axis labels, OHLC tooltips |
+| Venn diagram | Set circles, intersections, labels, animated rendering, tooltips |
 
-Most charting libraries are either too rigid or too complex to style properly for different platforms. **Super Charts** was born from a need for a unified API that feels native everywhere but remains "dead-simple" to customize.
+### Shared Features
 
-- **🚀 Multiplatform First**: Single codebase for UI, logic, and math.
-- **🎨 Ultimate Customizability**: Control every pixel—colors, fonts, sizes, and animations.
-- **⚛️ Atomic Design**: Built using the Atomic Design hierarchy (Atoms → Molecules → Organisms).
-- **🪶 Lightweight**: Minimal dependencies, focus on performance and `Canvas` rendering.
+- Compose Multiplatform targets: Android, iOS, and desktop JVM.
+- Canvas-based drawing for the chart bodies.
+- Per-chart style config data classes for colors, text styles, sizing, labels, legends, tooltips, and animation duration.
+- Shared tooltip component with optional close button and auto-dismiss timing.
+- Shared legend positioning for charts that support legends: `TOP`, `BOTTOM`, and `HIDDEN`.
+- Optional legend item toggling for supported multi-series charts.
+- Optional value formatter callbacks for supported tooltips and labels.
+- Empty, loading, and error state view helpers.
+- Accessibility semantics helpers for chart descriptions.
+- Scroll and zoom support where the chart type benefits from it.
+- Alpha-stage sample screens for each chart type.
 
----
+## Project Layout
 
-## 📸 Sneak Peek
+```text
+compose-super-charts/
+  compose-super-charts/   Core library module
+  sample-app/             Shared sample app used by Android and iOS entry points
+  sample-desktop/         Desktop launcher
+  iosApp/                 Xcode project for the iOS sample
+```
 
-| Line Chart | Pie Chart | Column Chart |
-| :---: | :---: | :---: |
-| ![Line](/docs/images/line_sample.png) | ![Pie](/docs/images/pie_sample.png) | ![Column](/docs/images/column_sample.png) |
+The library code is grouped by rough UI responsibility:
 
----
+```text
+components/atoms/         Small reusable UI pieces such as text and dividers
+components/molecules/     Shared chart UI pieces such as legends and tooltips
+components/organisms/     Complete chart composables
+models/                   Data and style configuration objects
+utils/                    Accessibility, modifiers, formatting, and helper utilities
+domain/                   Chart math helpers
+```
 
-## 🏁 Quick Start
+## Running The Project
 
-### 1. Add Dependency (Coming Soon)
+From the repository root:
 
-For now, you can clone the repository and include the `:compose-super-charts` module in your project.
+```bash
+./gradlew :compose-super-charts:compileDebugKotlinAndroid
+./gradlew :sample-app:compileDebugKotlinAndroid
+```
 
-### 2. Basic Usage (Line Chart)
+Desktop sample:
+
+```bash
+./gradlew :sample-desktop:run
+```
+
+Android sample:
+
+```bash
+./gradlew :sample-app:installDebug
+```
+
+iOS can be opened from `iosApp/iosApp.xcodeproj` after Gradle has synced the Kotlin Multiplatform project.
+
+## Using The Library Locally
+
+There is no published Maven artifact yet. For now, include the module in your project:
+
+```kotlin
+include(":compose-super-charts")
+```
+
+Then depend on it from your Compose module:
+
+```kotlin
+dependencies {
+    implementation(project(":compose-super-charts"))
+}
+```
+
+## Example
 
 ```kotlin
 val points = listOf(
-    ChartPointData("Mon", listOf(20f)),
-    ChartPointData("Tue", listOf(45f)),
-    ChartPointData("Wed", listOf(30f))
+    ChartPointData(
+        xLabel = "Mon",
+        yValues = listOf(24f),
+        highlightLabels = listOf(TooltipBubbleData("Sales", "24"))
+    ),
+    ChartPointData(
+        xLabel = "Tue",
+        yValues = listOf(42f),
+        highlightLabels = listOf(TooltipBubbleData("Sales", "42"))
+    ),
+    ChartPointData(
+        xLabel = "Wed",
+        yValues = listOf(31f),
+        highlightLabels = listOf(TooltipBubbleData("Sales", "31"))
+    )
 )
 
 LineChart(
-    modifier = Modifier.fillMaxWidth().height(300.dp),
+    modifier = Modifier
+        .fillMaxWidth()
+        .height(300.dp),
     points = points,
     maxY = 50,
     yAxisLabel = "Sales",
+    legendLabels = listOf("Revenue"),
     config = ChartStyleConfig(
-        lines = listOf(ChartLineConfig(lineStyle = SolidLine(color = Color.Blue)))
+        lines = listOf(
+            ChartLineConfig(
+                lineStyle = SolidLine(color = Color(0xFF2563EB)),
+                pointStyle = SolidPoint()
+            )
+        ),
+        legendPosition = LegendPosition.BOTTOM,
+        xAxisLabelRotation = -35f,
+        animationDuration = 500,
+        showTooltipCloseButton = true,
+        tooltipAutoDismissMs = 2500
     )
 )
 ```
 
----
+## Contributing
 
-## 🛠 Project Structure
+Contributions are welcome, especially fixes that make the charts more predictable across different screen sizes. Small, focused pull requests are easiest to review.
 
-- `compose-super-charts/`: The core library.
-- `sample-app/`: Shared sample application for Android/iOS/Desktop.
-- `sample-desktop/`: Desktop-specific launcher.
-- `iosApp/`: iOS-specific Xcode project and SwiftUI wrappers.
+Before opening a PR:
 
----
+1. Run the library and sample compile commands above.
+2. Test the chart you changed in the sample app.
+3. Keep public API changes intentional and mention them clearly in the PR.
+4. Prefer adding options to a chart's style config over hardcoding visual behavior.
+5. Keep chart math in `domain/` or small helpers when it starts to crowd a composable.
 
-## 🤝 Contributing
+When adding a chart, follow the existing shape:
 
-We love contributions! Whether it's a bug fix, a new chart type (Radar? Bubble?), or just a typo correction in the docs, feel free to open a PR.
+1. Add data models in `models/`.
+2. Add a style config in `models/`.
+3. Add the composable in `components/organisms/`.
+4. Reuse `TooltipBubble`, `UniversalLegend`, `ChartText`, and `ChartDivider` where possible.
+5. Add a sample screen so the chart can be tested manually.
 
-Check out our [Contributing Guide](CONTRIBUTING.md) to get started.
+## Current Priorities
 
----
+- Keep tooltip and legend behavior consistent across chart types.
+- Make sample screens useful for testing real options, not just showing happy paths.
+- Improve accessibility descriptions as chart interactions become richer.
+- Add tests around chart math and configuration edge cases.
+- Prepare a stable publishing setup once the API settles.
 
-## 📄 License
+## License
 
-```text
-Copyright 2026 Sumit Kotal
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-```
-*See full [LICENSE](LICENSE) for details.*
-
----
-
-*Built with ❤️ by the Super Charts Community.*
+Apache License 2.0. See [LICENSE](LICENSE).
