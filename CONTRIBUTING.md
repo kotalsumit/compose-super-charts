@@ -6,6 +6,8 @@ Thanks for improving Compose Super Charts. The best contributions make chart beh
 
 For larger changes, open an issue or discussion first. Small bug fixes, docs updates, and sample app improvements can go straight to a pull request.
 
+By submitting a contribution, you agree that it will be licensed under the same Apache License 2.0 terms as the rest of the project.
+
 A good PR usually includes:
 
 - A short explanation of the chart or behavior being changed.
