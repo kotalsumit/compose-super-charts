@@ -68,7 +68,8 @@ data class HollowPoint(
 data class ChartLineConfig(
     val lineStyle: LineStyle,
     val pointStyle: PointStyle,
-    val fillGradientColors: List<Color>? = null
+    val fillGradientColors: List<Color>? = null,
+    val isVisible: Boolean = true
 )
 
 data class ChartStyleConfig(
@@ -106,5 +107,8 @@ data class ChartStyleConfig(
     val xAxisLabelColor: Color = Color.Gray,
     val tooltipAutoDismissMs: Long? = null,
     val showTooltipCloseButton: Boolean = false,
-    val animationDuration: Int = 500
+    val animationDuration: Int = 500,
+    val showCrosshair: Boolean = true,
+    val allowLegendToggle: Boolean = false,
+    val valueFormatter: ((Float) -> String)? = null
 )

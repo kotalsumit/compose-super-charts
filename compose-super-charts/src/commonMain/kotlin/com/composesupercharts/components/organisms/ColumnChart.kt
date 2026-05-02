@@ -42,6 +42,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import com.composesupercharts.utils.rotatedLayout
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.composesupercharts.components.atoms.ChartDivider
@@ -69,6 +72,8 @@ fun ColumnChart(
 ) {
     if (data.points.isEmpty()) return
 
+    val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
     val animationProgress = remember { Animatable(0f) }
     LaunchedEffect(data) {
         animationProgress.snapTo(0f)
@@ -79,6 +84,7 @@ fun ColumnChart(
     }
 
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    var hiddenSeriesIndexes by remember { mutableStateOf<Set<Int>>(emptySet()) }
     val maxOfY = remember(data, maxY, config.type) {
         val highest = data.points.maxOf { point ->
             if (config.type == ColumnChartType.STACKED) point.values.sum() else point.values.maxOrNull() ?: 1f
@@ -123,7 +129,11 @@ fun ColumnChart(
                 textStyle = config.legendTextStyle,
                 shape = LegendShape.ROUNDED_SQUARE,
                 shapeSize = config.legendBarWidth, // using existing config for backward compatibility
-                itemSpacing = config.legendItemSpacing
+                itemSpacing = config.legendItemSpacing,
+                hiddenItemIndexes = hiddenSeriesIndexes,
+                onItemClick = if (config.allowLegendToggle) { index ->
+                    hiddenSeriesIndexes = if (index in hiddenSeriesIndexes) hiddenSeriesIndexes - index else hiddenSeriesIndexes + index
+                } else null
             )
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -222,6 +232,7 @@ fun ColumnChart(
                                 
                                 when (config.type) {
                                     ColumnChartType.STANDARD -> {
+                                        if (0 in hiddenSeriesIndexes) return@forEachIndexed
                                         val val0 = point.values.getOrNull(0) ?: 0f
                                         val barHeight = (val0 / maxOfY) * size.height * progress
                                         drawRoundRect(
@@ -230,11 +241,20 @@ fun ColumnChart(
                                             size = Size(config.barWidth.toPx(), barHeight),
                                             cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
                                         )
+                                        if (config.showValueLabels) {
+                                            val label = config.valueFormatter?.invoke(val0) ?: val0.toInt().toString()
+                                            val layout = textMeasurer.measure(label, config.yAxisLabelTextStyle)
+                                            drawText(layout, topLeft = Offset(centerX - layout.size.width / 2, size.height - barHeight - layout.size.height - 4.dp.toPx()))
+                                        }
                                     }
                                     ColumnChartType.CLUSTERED -> {
                                         val clusterWidth = (config.barWidth.toPx() * point.values.size) + (config.clusterSpacing.toPx() * (point.values.size - 1))
                                         var currentX = centerX - clusterWidth / 2
-                                        point.values.forEachIndexed { valIdx, value ->
+                                        point.values.forEachIndexed valueLoop@{ valIdx, value ->
+                                            if (valIdx in hiddenSeriesIndexes) {
+                                                currentX += config.barWidth.toPx() + config.clusterSpacing.toPx()
+                                                return@valueLoop
+                                            }
                                             val barHeight = (value / maxOfY) * size.height * progress
                                             drawRoundRect(
                                                 color = point.colors.getOrNull(valIdx) ?: Color.Gray,
@@ -242,18 +262,29 @@ fun ColumnChart(
                                                 size = Size(config.barWidth.toPx(), barHeight),
                                                 cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
                                             )
+                                            if (config.showValueLabels) {
+                                                val label = config.valueFormatter?.invoke(value) ?: value.toInt().toString()
+                                                val layout = textMeasurer.measure(label, config.yAxisLabelTextStyle)
+                                                drawText(layout, topLeft = Offset(currentX + config.barWidth.toPx() / 2 - layout.size.width / 2, size.height - barHeight - layout.size.height - 4.dp.toPx()))
+                                            }
                                             currentX += config.barWidth.toPx() + config.clusterSpacing.toPx()
                                         }
                                     }
                                     ColumnChartType.STACKED -> {
                                         var currentY = size.height
-                                        point.values.forEachIndexed { valIdx, value ->
+                                        point.values.forEachIndexed valueLoop@{ valIdx, value ->
+                                            if (valIdx in hiddenSeriesIndexes) return@valueLoop
                                             val barHeight = (value / maxOfY) * size.height * progress
                                             drawRect(
                                                 color = point.colors.getOrNull(valIdx) ?: Color.Gray,
                                                 topLeft = Offset(centerX - config.barWidth.toPx() / 2, currentY - barHeight),
                                                 size = Size(config.barWidth.toPx(), barHeight)
                                             )
+                                            if (config.showValueLabels && barHeight > 18.dp.toPx()) {
+                                                val label = config.valueFormatter?.invoke(value) ?: value.toInt().toString()
+                                                val layout = textMeasurer.measure(label, config.yAxisLabelTextStyle)
+                                                drawText(layout, topLeft = Offset(centerX - layout.size.width / 2, currentY - barHeight / 2 - layout.size.height / 2))
+                                            }
                                             currentY -= barHeight
                                         }
                                     }
@@ -265,10 +296,12 @@ fun ColumnChart(
                             val point = data.points[index]
                             val centerX = spacing * index + spacing / 2
                             
-                            Box(modifier = Modifier.offset(x = centerX - 40.dp, y = 0.dp)) {
+                            Box(modifier = Modifier.fillMaxWidth()) {
                                 TooltipBubble(
-                                    xPosition = 0f,
-                                    labels = point.tooltipData ?: point.values.mapIndexed { idx, v -> TooltipBubbleData(legendLabels?.getOrNull(idx) ?: "Value", v.toInt().toString()) },
+                                    xPosition = with(density) { centerX.toPx() },
+                                    labels = point.tooltipData ?: point.values.mapIndexedNotNull { idx, v ->
+                                        if (idx in hiddenSeriesIndexes) null else TooltipBubbleData(legendLabels?.getOrNull(idx) ?: "Value", config.valueFormatter?.invoke(v) ?: v.toInt().toString())
+                                    },
                                     isFirst = index == 0,
                                     isLast = index == data.points.lastIndex,
                                     config = ChartStyleConfig(
@@ -319,9 +352,12 @@ fun ColumnChart(
                 textStyle = config.legendTextStyle,
                 shape = LegendShape.ROUNDED_SQUARE,
                 shapeSize = config.legendBarWidth,
-                itemSpacing = config.legendItemSpacing
+                itemSpacing = config.legendItemSpacing,
+                hiddenItemIndexes = hiddenSeriesIndexes,
+                onItemClick = if (config.allowLegendToggle) { index ->
+                    hiddenSeriesIndexes = if (index in hiddenSeriesIndexes) hiddenSeriesIndexes - index else hiddenSeriesIndexes + index
+                } else null
             )
         }
     }
 }
-

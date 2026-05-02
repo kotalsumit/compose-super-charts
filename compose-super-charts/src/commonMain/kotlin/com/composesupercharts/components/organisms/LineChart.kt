@@ -96,7 +96,6 @@ fun LineChart(
         )
     }
 
-    // TODO: Expose animation duration and easing curve in ChartStyleConfig
     val (maxOfY, stepValue) = remember(points, maxY) {
         ChartMathCalculations.calculateYAxisMetrics(points, maxY)
     }
@@ -108,6 +107,8 @@ fun LineChart(
     val bottomAxisHeight = config.bottomAxisHeight
 
     var selectedIndex by remember(points) { mutableStateOf<Int?>(null) }
+    var hiddenSeriesIndexes by remember(config.lines.size) { mutableStateOf<Set<Int>>(emptySet()) }
+    val visibleLineIndexes = config.lines.indices.filter { config.lines[it].isVisible && it !in hiddenSeriesIndexes }
     
     // Zoom & Pan states
     var scaleX by remember { mutableStateOf(1f) }
@@ -150,7 +151,18 @@ fun LineChart(
         }
     ) {
         if (config.legendPosition == LegendPosition.TOP && legendLabels != null) {
-            ChartLegend(legendLabels = legendLabels, config = config)
+            ChartLegend(
+                legendLabels = legendLabels,
+                config = config,
+                hiddenSeriesIndexes = hiddenSeriesIndexes,
+                onLegendClick = if (config.allowLegendToggle) { index ->
+                    hiddenSeriesIndexes = if (index in hiddenSeriesIndexes) {
+                        hiddenSeriesIndexes - index
+                    } else {
+                        hiddenSeriesIndexes + index
+                    }
+                } else null
+            )
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -278,6 +290,7 @@ fun LineChart(
 
                         onDrawBehind {
                             config.lines.forEachIndexed { lineIndex, lineConfig ->
+                                if (lineIndex !in visibleLineIndexes) return@forEachIndexed
                                 val paths = linePaths[lineIndex]
                                 
                                 if (paths.animatedFillPath != null && lineConfig.fillGradientColors != null) {
@@ -333,7 +346,7 @@ fun LineChart(
                         if (index in points.indices) {
                             HighlightAndTooltip(
                                 index = index,
-                                labels = points[index].highlightLabels,
+                                labels = points[index].highlightLabels.filterIndexed { seriesIndex, _ -> seriesIndex in visibleLineIndexes },
                                 points = points,
                                 config = config,
                                 onClose = { selectedIndex = null }
@@ -374,7 +387,18 @@ fun LineChart(
 
         if (config.legendPosition == LegendPosition.BOTTOM && legendLabels != null) {
             Spacer(modifier = Modifier.height(16.dp))
-            ChartLegend(legendLabels = legendLabels, config = config)
+            ChartLegend(
+                legendLabels = legendLabels,
+                config = config,
+                hiddenSeriesIndexes = hiddenSeriesIndexes,
+                onLegendClick = if (config.allowLegendToggle) { index ->
+                    hiddenSeriesIndexes = if (index in hiddenSeriesIndexes) {
+                        hiddenSeriesIndexes - index
+                    } else {
+                        hiddenSeriesIndexes + index
+                    }
+                } else null
+            )
         }
     }
 }

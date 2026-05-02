@@ -175,12 +175,13 @@ fun RadarChart(
             val px = center.x + cos(angle) * entryRadius
             val py = center.y + sin(angle) * entryRadius
 
-            Box(modifier = Modifier.offset(
-                x = with(density) { px.toDp() },
-                y = with(density) { py.toDp() - 8.dp }
-            )) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = with(density) { py.toDp() - 8.dp })
+            ) {
                 TooltipBubble(
-                    xPosition = 0f,
+                    xPosition = px,
                     labels = listOf(
                         TooltipBubbleData(labelName = series.label, value = entry.label ?: entry.value.toString())
                     ),

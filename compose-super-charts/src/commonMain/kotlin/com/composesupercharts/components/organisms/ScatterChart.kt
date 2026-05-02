@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.semantics
 import com.composesupercharts.utils.ChartAccessibility.scatterChartDescription
@@ -164,6 +165,27 @@ fun ScatterChart(
                             }
                         }
 
+                        selectedPoint?.let { (_, point) ->
+                            if (config.showCrosshair) {
+                                val px = ((point.x - minX) / xRange) * width
+                                val py = height - ((point.y - minY) / yRange) * height
+                                drawLine(
+                                    color = config.axisColor.copy(alpha = 0.55f),
+                                    start = Offset(px, 0f),
+                                    end = Offset(px, height),
+                                    strokeWidth = 1.dp.toPx(),
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f))
+                                )
+                                drawLine(
+                                    color = config.axisColor.copy(alpha = 0.55f),
+                                    start = Offset(0f, py),
+                                    end = Offset(width, py),
+                                    strokeWidth = 1.dp.toPx(),
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 8f))
+                                )
+                            }
+                        }
+
                         // Draw Points
                         data.series.forEach { series ->
                             series.points.forEach { point ->
@@ -220,15 +242,19 @@ fun ScatterChart(
                 val px = ((point.x - minX) / xRange) * width
                 val py = height - ((point.y - minY) / yRange) * height
                 
-                Box(modifier = Modifier.offset(
-                    x = with(density) { px.toDp() },
-                    y = with(density) { py.toDp() - (point.radius?.toDp() ?: config.defaultPointRadius) - 8.dp }
-                )) {
+                Box(
+                    modifier = Modifier
+                        .requiredWidth(with(density) { width.toDp() })
+                        .offset(y = with(density) { py.toDp() - (point.radius?.toDp() ?: config.defaultPointRadius) - 8.dp })
+                ) {
                     TooltipBubble(
-                        xPosition = 0f,
+                        xPosition = px,
                         labels = listOf(
                             TooltipBubbleData(labelName = "Series", value = series.label),
-                            TooltipBubbleData(labelName = point.label ?: "Point", value = "X: ${point.x}, Y: ${point.y}")
+                            TooltipBubbleData(
+                                labelName = point.label ?: "Point",
+                                value = "X: ${config.valueFormatter?.invoke(point.x) ?: point.x}, Y: ${config.valueFormatter?.invoke(point.y) ?: point.y}"
+                            )
                         ),
                         isFirst = selection.second == series.points.first(),
                         isLast = selection.second == series.points.last(),

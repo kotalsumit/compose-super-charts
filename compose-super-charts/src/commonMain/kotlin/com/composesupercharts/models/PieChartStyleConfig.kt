@@ -29,5 +29,10 @@ data class PieChartStyleConfig(
     val legendShapeRadius: Float = 6f,
     val tooltipAutoDismissMs: Long? = null,
     val showTooltipCloseButton: Boolean = false,
-    val animationDuration: Int = 500
+    val animationDuration: Int = 500,
+    val centerLabel: String? = null,
+    val centerValue: String? = null,
+    val centerLabelTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Normal),
+    val centerValueTextStyle: TextStyle = TextStyle(color = Color.Black, fontSize = 18.sp, fontWeight = FontWeight.Bold),
+    val valueFormatter: ((Float) -> String)? = null
 )

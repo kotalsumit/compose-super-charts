@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -41,6 +42,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.composesupercharts.components.atoms.ChartLegendShape
 import com.composesupercharts.components.atoms.ChartText
@@ -66,6 +68,7 @@ fun PieChart(
 ) {
     if (data.slices.isEmpty()) return
 
+    val density = LocalDensity.current
     val totalValue = data.slices.sumOf { it.value.toDouble() }.toFloat()
     val animationProgress = remember { Animatable(0f) }
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -245,6 +248,17 @@ fun PieChart(
                 }
             }
 
+            if (config.centerLabel != null || config.centerValue != null) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    config.centerValue?.let {
+                        ChartText(text = it, style = config.centerValueTextStyle)
+                    }
+                    config.centerLabel?.let {
+                        ChartText(text = it, style = config.centerLabelTextStyle)
+                    }
+                }
+            }
+
             selectedIndex?.let { index ->
                 val slice = data.slices[index]
                 val sweepAngle = (slice.value / totalValue) * 360f
@@ -254,22 +268,25 @@ fun PieChart(
                 }
                 val midAngle = startAngle + sweepAngle / 2
                 val midAngleRad = midAngle.toDouble() * PI / 180.0
-                val radiusPx = (config.chartSize.value / 2f) 
+                val chartSizePx = with(density) { config.chartSize.toPx() }
+                val radiusPx = chartSizePx / 2f
                 val offsetX = (radiusPx * config.tooltipOffsetRatio) * cos(midAngleRad).toFloat()
                 val offsetY = (radiusPx * config.tooltipOffsetRatio) * sin(midAngleRad).toFloat()
+                val tooltipX = radiusPx + offsetX
+                val tooltipY = radiusPx + offsetY
 
                 val isLeftEdge = midAngle > 100f && midAngle < 260f
                 val isRightEdge = midAngle < 80f || midAngle > 280f
 
                 Box(
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .offset(x = offsetX.dp, y = offsetY.dp)
+                        .fillMaxSize()
+                        .offset(y = with(density) { tooltipY.toDp() - 8.dp })
                         .zIndex(15f)
                 ) {
                     TooltipBubble(
-                        xPosition = 0f,
-                        labels = slice.tooltipData ?: listOf(TooltipBubbleData(slice.label, slice.value.toInt().toString())),
+                        xPosition = tooltipX,
+                        labels = slice.tooltipData ?: listOf(TooltipBubbleData(slice.label, config.valueFormatter?.invoke(slice.value) ?: slice.value.toInt().toString())),
                         isFirst = isLeftEdge,
                         isLast = isRightEdge,
                         config = ChartStyleConfig(

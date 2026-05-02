@@ -40,5 +40,7 @@ data class ScatterChartStyleConfig(
     val padding: Dp = 32.dp,
     val tooltipAutoDismissMs: Long? = null,
     val showTooltipCloseButton: Boolean = false,
-    val animationDuration: Int = 500
+    val animationDuration: Int = 500,
+    val showCrosshair: Boolean = true,
+    val valueFormatter: ((Float) -> String)? = null
 )

@@ -219,12 +219,13 @@ fun BubbleChart(
                 val centerY = chartHeight + maxRadiusPx - (normalizedY * chartHeight)
                 val radius = normalizedSize * maxRadiusPx
 
-                Box(modifier = Modifier.offset(
-                    x = with(density) { centerX.toDp() },
-                    y = with(density) { centerY.toDp() - radius.toDp() - 8.dp }
-                )) {
+                Box(
+                    modifier = Modifier
+                        .requiredWidth(with(density) { width.toDp() })
+                        .offset(y = with(density) { centerY.toDp() - radius.toDp() - 8.dp })
+                ) {
                     TooltipBubble(
-                        xPosition = 0f,
+                        xPosition = centerX,
                         labels = point.tooltipData ?: listOf(
                             TooltipBubbleData(point.label, "${point.size}")
                         ),

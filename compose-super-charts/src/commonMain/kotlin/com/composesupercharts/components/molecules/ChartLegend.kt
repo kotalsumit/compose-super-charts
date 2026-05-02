@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,7 +43,9 @@ import com.composesupercharts.models.SolidPoint
 fun ChartLegend(
     modifier: Modifier = Modifier,
     legendLabels: List<String>,
-    config: ChartStyleConfig
+    config: ChartStyleConfig,
+    hiddenSeriesIndexes: Set<Int> = emptySet(),
+    onLegendClick: ((Int) -> Unit)? = null
 ) {
     val showLegend = remember { mutableStateOf(false) }
 
@@ -71,7 +74,9 @@ fun ChartLegend(
                         LegendItem(
                             label = label,
                             lineConfig = lineConfig,
-                            config = config
+                            config = config,
+                            isHidden = index in hiddenSeriesIndexes,
+                            onClick = onLegendClick?.let { click -> { click(index) } }
                         )
                     }
                 }
@@ -81,13 +86,22 @@ fun ChartLegend(
 }
 
 @Composable
-private fun LegendItem(label: String, lineConfig: ChartLineConfig, config: ChartStyleConfig) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun LegendItem(
+    label: String,
+    lineConfig: ChartLineConfig,
+    config: ChartStyleConfig,
+    isHidden: Boolean,
+    onClick: (() -> Unit)?
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = if (onClick != null) Modifier.clickable { onClick() } else Modifier
+    ) {
         val isHollow = lineConfig.pointStyle is HollowPoint
         
         ChartLegendShape(
             modifier = Modifier.size(width = config.legendShapeWidth, height = config.legendShapeHeight),
-            color = lineConfig.lineStyle.color,
+            color = lineConfig.lineStyle.color.copy(alpha = if (isHidden) 0.28f else 1f),
             lineStrokeWidth = 3f,
             pointRadius = 4f,
             isHollow = isHollow,
@@ -95,6 +109,6 @@ private fun LegendItem(label: String, lineConfig: ChartLineConfig, config: Chart
         )
         
         Spacer(modifier = Modifier.height(4.dp))
-        ChartText(text = label, style = config.legendTextStyle)
+        ChartText(text = label, style = config.legendTextStyle.copy(color = config.legendTextStyle.color.copy(alpha = if (isHidden) 0.45f else 1f)))
     }
 }

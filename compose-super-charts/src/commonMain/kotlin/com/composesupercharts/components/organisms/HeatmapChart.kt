@@ -147,8 +147,8 @@ fun HeatmapChart(
                         }
                     }
 
-                    // X-Axis (Column) Labels
-                    if (data.columnLabels != null) {
+                    val columnLabels = data.columnLabels
+                    if (!columnLabels.isNullOrEmpty()) {
                         Row(
                             modifier = Modifier.width(with(density) {
                                 (cols * (cellSize + with(
@@ -167,7 +167,7 @@ fun HeatmapChart(
                                     contentAlignment = Alignment.TopCenter
                                 ) {
                                     com.composesupercharts.components.atoms.ChartText(
-                                        text = data.columnLabels!![col],
+                                        text = columnLabels.getOrNull(col).orEmpty(),
                                         style = config.labelTextStyle,
                                         modifier = Modifier
                                             .rotatedLayout(config.xAxisLabelRotation)
@@ -188,12 +188,12 @@ fun HeatmapChart(
                 val colLabel = data.columnLabels?.getOrNull(cell.col) ?: "Col ${cell.col}"
 
                 Box(
-                    modifier = Modifier.offset(
-                    x = with(density) { (x + cellSize / 2).toDp() },
-                    y = with(density) { y.toDp() - 8.dp }
-                )) {
+                    modifier = Modifier
+                        .requiredWidth(with(density) { (cols * (cellSize + config.cellSpacing.toPx())).toDp() })
+                        .offset(y = with(density) { y.toDp() - 8.dp })
+                ) {
                     TooltipBubble(
-                        xPosition = 0f,
+                        xPosition = x + cellSize / 2,
                         labels = listOf(
                             TooltipBubbleData(
                                 labelName = "$rowLabel, $colLabel",

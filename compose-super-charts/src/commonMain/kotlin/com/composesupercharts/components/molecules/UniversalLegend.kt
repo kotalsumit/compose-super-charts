@@ -1,6 +1,7 @@
 package com.composesupercharts.components.molecules
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,7 +38,9 @@ fun UniversalLegend(
     textStyle: TextStyle,
     shape: LegendShape = LegendShape.CIRCLE,
     shapeSize: Dp = 10.dp,
-    itemSpacing: Dp = 16.dp
+    itemSpacing: Dp = 16.dp,
+    hiddenItemIndexes: Set<Int> = emptySet(),
+    onItemClick: ((Int) -> Unit)? = null
 ) {
     FlowRow(
         modifier = modifier
@@ -46,10 +49,19 @@ fun UniversalLegend(
         horizontalArrangement = Arrangement.Center,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items.forEach { item ->
+        items.forEachIndexed { index, item ->
+            val isHidden = index in hiddenItemIndexes
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = itemSpacing / 2)
+                modifier = Modifier
+                    .padding(horizontal = itemSpacing / 2)
+                    .then(
+                        if (onItemClick != null) {
+                            Modifier.clickable { onItemClick(index) }
+                        } else {
+                            Modifier
+                        }
+                    )
             ) {
                 Box(
                     modifier = Modifier
@@ -61,12 +73,12 @@ fun UniversalLegend(
                                 LegendShape.ROUNDED_SQUARE -> RoundedCornerShape(2.dp)
                             }
                         )
-                        .background(item.color)
+                        .background(item.color.copy(alpha = if (isHidden) 0.28f else 1f))
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 ChartText(
                     text = item.label,
-                    style = textStyle
+                    style = textStyle.copy(color = textStyle.color.copy(alpha = if (isHidden) 0.45f else 1f))
                 )
             }
         }

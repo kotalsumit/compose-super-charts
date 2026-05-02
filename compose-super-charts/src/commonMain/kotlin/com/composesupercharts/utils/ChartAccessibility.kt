@@ -12,6 +12,8 @@ import com.composesupercharts.models.ScatterChartData
 import com.composesupercharts.models.BubbleChartData
 import com.composesupercharts.models.ColumnChartData
 import com.composesupercharts.models.CandlestickChartData
+import com.composesupercharts.models.CombinedChartData
+import com.composesupercharts.models.RangeChartData
 
 /**
  * Utility to provide meaningful content descriptions for charts.
@@ -41,7 +43,7 @@ object ChartAccessibility {
         val description = buildString {
             append("Pie Chart showing ${data.slices.size} slices. ")
             data.slices.forEach { slice ->
-                append("${slice.label ?: "Slice"}: ${slice.value}. ")
+                append("${slice.label}: ${slice.value}. ")
             }
         }
         contentDescription = description
@@ -87,5 +89,22 @@ object ChartAccessibility {
 
     fun SemanticsPropertyReceiver.candlestickChartDescription(data: CandlestickChartData) {
         contentDescription = "Candlestick Chart showing ${data.entries.size} financial data points."
+    }
+
+    fun SemanticsPropertyReceiver.areaChartDescription(
+        seriesCount: Int,
+        points: List<ChartPointData>,
+        yAxisLabel: String?
+    ) {
+        val label = yAxisLabel ?: "data"
+        contentDescription = "Area Chart showing $seriesCount series of $label with ${points.size} points."
+    }
+
+    fun SemanticsPropertyReceiver.combinedChartDescription(data: CombinedChartData) {
+        contentDescription = "Combined Chart showing columns and a line across ${data.points.size} categories."
+    }
+
+    fun SemanticsPropertyReceiver.rangeChartDescription(data: RangeChartData) {
+        contentDescription = "Range Chart showing ${data.entries.size} start and end intervals."
     }
 }
