@@ -1,49 +1,67 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+This file tracks release-ready changes in Compose Super Charts. Keep entries short, specific, and useful for people deciding what to test or contribute next.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## Current Release
 
-## [1.0.0-alpha01] - 2026-03-12
+### Charts
+- Added area chart support using the line chart data model with fill enabled by default.
+- Added combined chart support for column and line values in one view.
+- Added range chart support for start/end interval data.
+- Completed sample screens for line, area, column, bar, pie, combined, range, pyramid, gauge, bubble, scatter, heatmap, radar, candlestick, and Venn charts.
 
-### Added
-- Initial release of **Compose Super Charts**.
-- Support for **Android**, **iOS**, and **Desktop** (JVM).
-- Fundamental Chart Types:
-    - Line Chart (Multi-line, animated, scrollable).
-    - Pie Chart (Doughnut, Exploded, Spie).
-    - Column & Bar Charts (Clustered, Stacked).
-    - Pyramid & Funnel.
-    - Bubble & Scatter Charts.
-    - Venn Diagram.
-    - Gauge Chart.
-    - Heatmap.
-    - Radar Chart.
-    - Candlestick Chart.
-- Global Light/Dark theme support.
-- Atomic Design structure (Atoms, Molecules, Organisms).
-- Customization hooks for colors, fonts, sizes, labels, legends, tooltips, and animation timing.
+### Interaction
+- Added shared tooltip edge clamping across chart implementations.
+- Improved tooltip placement near right edges and lower chart rows.
+- Added optional tooltip close buttons and auto-dismiss timing.
+- Added optional legend item toggling for supported multi-series charts.
+- Added optional value labels for supported bar, column, and combined chart views.
+- Added scatter chart crosshair rendering for selected points.
+- Added pie chart center label and center value options.
+- Added formatter callbacks for supported chart values, labels, and tooltips.
 
-### Fixed
-- Linkage issues for iOS framework distribution.
-- Desktop sample compilation errors.
-- Tooltip clipping in edge cases.
+### Layout And Accessibility
+- Added shared chart state helpers for empty, loading, and error states.
+- Added accessibility descriptions for chart semantics, including area, combined, and range charts.
+- Improved candlestick width and y-axis spacing when the y-axis is visible.
+- Improved range chart tooltip anchoring for bottom rows and reversed intervals.
+- Improved combined chart value label placement near the top edge.
+- Fixed bar chart tooltip clipping near the bottom of the chart.
 
-## Unreleased
+### Sample App
+- Added Android system back handling so chart screens return to the gallery.
+- Updated the chart gallery with descriptions and distinct chart icons.
+- Added one-line descriptions to chart demo screens.
+- Moved chart descriptions below the screen title and before chart controls.
+- Fixed the light/dark theme toggle layout on the home screen.
+- Replaced deprecated auto-mirrored icon usage in sample navigation.
 
-### Added
-- Area chart wrapper for filled line charts.
-- Combined column and line chart.
-- Range chart for interval-style data.
-- Shared chart state view for empty, loading, and error states.
-- Optional value labels for Bar and Column charts.
-- Optional legend item toggling for Line, Bar, and Column charts.
-- Pie chart center label and center value.
-- Formatter callbacks for supported chart values and tooltips.
-- Scatter chart crosshair rendering for selected points.
-- Android system back handling in the sample app.
+### Documentation
+- Refreshed the README to match the current chart list and project structure.
+- Updated contributor notes with chart behavior checks and testing guidance.
+- Fixed outdated wording and stale release notes.
 
-### Improved
-- Shared tooltip edge clamping across chart implementations.
-- Candlestick width calculation when a fixed y-axis is present.
+## Earlier Work
+
+### Charts
+- Added line chart support with multiple series, animation, tooltips, and scrolling.
+- Added pie and doughnut chart support.
+- Added column and bar charts with clustered and stacked modes.
+- Added pyramid and funnel chart support.
+- Added bubble and scatter chart support.
+- Added Venn diagram support.
+- Added gauge chart support.
+- Added heatmap support.
+- Added radar chart support.
+- Added candlestick chart support.
+
+### Platform
+- Added Android, iOS, and desktop JVM target support.
+- Added light and dark theme support in the sample app.
+- Organized the library around atoms, molecules, organisms, models, utilities, and chart math helpers.
+- Added customization hooks for colors, fonts, sizes, labels, legends, tooltips, and animation timing.
+
+### Fixes
+- Fixed iOS framework linkage issues.
+- Fixed desktop sample compilation issues.
+- Fixed early tooltip clipping cases.

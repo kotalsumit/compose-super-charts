@@ -1,50 +1,74 @@
 # Contributing
 
-Thanks for taking the time to improve Compose Super Charts. The project is still alpha, so the most useful contributions are the ones that make behavior clearer, more consistent, and easier to test.
+Thanks for improving Compose Super Charts. The best contributions make chart behavior clearer, more consistent, and easier to test across screen sizes.
 
 ## Before You Start
 
-For larger changes, open an issue or discussion first. A small bug fix, documentation cleanup, or sample improvement can go straight to a pull request.
+For larger changes, open an issue or discussion first. Small bug fixes, docs updates, and sample app improvements can go straight to a pull request.
 
-Good contributions usually include:
+A good PR usually includes:
 
-- A short description of the chart or behavior being changed.
-- Screenshots or screen recordings for visual changes.
-- Notes about Android, desktop, or iOS testing if you were able to run them.
-- A focused diff. Avoid mixing formatting, refactors, and feature work in one PR.
+- A short explanation of the chart or behavior being changed.
+- Screenshots or a short recording for visual changes.
+- Notes about Android, desktop, or iOS testing.
+- A focused diff. Avoid mixing formatting, refactors, and feature work.
 
 ## Local Checks
 
-Run these from the repository root:
+Run the checks that match your change:
 
 ```bash
 ./gradlew :compose-super-charts:compileDebugKotlinAndroid
 ./gradlew :sample-app:compileDebugKotlinAndroid
+./gradlew :sample-app:compileKotlinDesktop
 ```
 
-If you change desktop-specific behavior, also run:
+For the desktop sample:
 
 ```bash
 ./gradlew :sample-desktop:run
 ```
 
+For Android device testing:
+
+```bash
+./gradlew :sample-app:installDebug
+```
+
+If you touch iOS-specific code, open `iosApp/iosApp.xcodeproj` and build the sample from Xcode.
+
 ## Code Guidelines
 
 - Keep chart data in `models/`.
 - Keep chart-level styling in a style config data class.
-- Reuse shared pieces such as `TooltipBubble`, `UniversalLegend`, `ChartText`, and `ChartDivider`.
+- Reuse shared pieces such as `TooltipBubble`, `UniversalLegend`, `ChartText`, `ChartDivider`, and `ChartStateView`.
 - Keep heavy math out of composables when it can live in `domain/` or a small utility.
 - Prefer a configuration option over hardcoded visual behavior.
-- Be careful with public API changes; this library is alpha, but people may still be testing against it.
+- Keep public API changes intentional and call them out in the PR description.
+- Keep comments useful and short. Prefer readable code over explaining every line.
+
+## Chart Behavior Checklist
+
+When changing a chart, check these before opening a PR:
+
+- Tooltips stay inside the chart bounds at the left, right, top, and bottom edges.
+- Legends wrap cleanly and still work when labels are long.
+- Empty data does not crash the chart.
+- Label text does not overlap badly on small screens.
+- Scroll and zoom still work if the chart supports them.
+- Light and dark themes both look readable.
+- Accessibility semantics describe the chart at a useful high level.
 
 ## Adding A Chart
 
 1. Add the data model.
 2. Add the style config.
 3. Add the chart composable under `components/organisms/`.
-4. Add accessibility semantics or extend `ChartAccessibility`.
-5. Add a sample screen with enough controls to test the important states.
-6. Update the README feature table.
+4. Add or extend accessibility semantics in `ChartAccessibility`.
+5. Reuse shared tooltip, legend, text, divider, and state components where possible.
+6. Add a sample screen with controls for the important states.
+7. Update the README chart table.
+8. Add a changelog entry.
 
 ## Pull Request Notes
 
@@ -55,4 +79,4 @@ In the PR description, include:
 - How you tested it.
 - Anything reviewers should look at carefully.
 
-That is enough. Clear and boring is good here.
+Clear and boring is good here.
