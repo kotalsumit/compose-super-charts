@@ -22,9 +22,14 @@ jobs:
 
       - name: Decode signing key
         run: |
+          test -n "${GPG_KEY_CONTENTS_BASE64}"
+          echo "${GPG_KEY_CONTENTS_BASE64}" | base64 --decode > signing-key.asc
+          grep -q "BEGIN PGP PRIVATE KEY BLOCK" signing-key.asc
+          grep -q "END PGP PRIVATE KEY BLOCK" signing-key.asc
+
           {
             echo "ORG_GRADLE_PROJECT_signingInMemoryKey<<EOF"
-            echo "${GPG_KEY_CONTENTS_BASE64}" | base64 --decode
+            cat signing-key.asc
             echo
             echo "EOF"
           } >> "$GITHUB_ENV"
