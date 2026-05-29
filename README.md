@@ -82,9 +82,18 @@ Install the Android sample:
 
 Open the iOS sample from `iosApp/iosApp.xcodeproj` after the Kotlin Multiplatform project has synced.
 
-## Using The Library Locally
+## Installation
 
-There is no published Maven artifact yet. Add the module to your project:
+After the first Maven Central release is available, add:
+
+```kotlin
+dependencies {
+    implementation("io.github.kotalsumit:compose-super-charts:1.0.0")
+}
+```
+
+Until the Maven Central publication is live, add the module locally:
+
 
 ```kotlin
 include(":compose-super-charts")
@@ -97,6 +106,22 @@ dependencies {
     implementation(project(":compose-super-charts"))
 }
 ```
+
+## Publishing
+
+The library is configured for Maven Central publishing through the Central Portal.
+
+Before publishing, create and verify the `io.github.kotalsumit` namespace in Maven Central, then add these GitHub Actions secrets:
+
+```text
+MAVEN_CENTRAL_USERNAME
+MAVEN_CENTRAL_PASSWORD
+SIGNING_KEY_ID
+SIGNING_PASSWORD
+GPG_KEY_CONTENTS
+```
+
+The release workflow runs when a GitHub release is published. It uploads artifacts to Maven Central, where the deployment can be reviewed and released.
 
 ## Example
 

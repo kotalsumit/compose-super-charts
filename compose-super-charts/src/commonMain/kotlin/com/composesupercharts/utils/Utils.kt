@@ -4,6 +4,8 @@ import com.composesupercharts.models.UnitType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 
 fun Float.formatWithUnit(unitType: UnitType): String {
@@ -12,6 +14,13 @@ fun Float.formatWithUnit(unitType: UnitType): String {
         UnitType.CURRENCY -> "$${this.toInt()}"
         else -> this.toString()
     }
+}
+
+fun Float.formatOneDecimal(): String {
+    val scaled = (this * 10f).roundToInt()
+    val sign = if (scaled < 0) "-" else ""
+    val absolute = abs(scaled)
+    return "$sign${absolute / 10}.${absolute % 10}"
 }
 
 fun Color.getLightToDarkGradientShades() = listOf(
@@ -38,4 +47,3 @@ fun Modifier.vertical() =
             )
         }
     }
-

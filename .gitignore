@@ -3,6 +3,9 @@ build/
 .idea
 *.iml
 local.properties
+*.asc
+*.gpg
+*.key
 .DS_Store
 .DS_Store?
 ._*

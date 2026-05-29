@@ -2,7 +2,11 @@ plugins {
     kotlin("multiplatform")
     id("com.android.library")
     id("org.jetbrains.compose")
+    id("com.vanniktech.maven.publish")
 }
+
+group = "io.github.kotalsumit"
+version = "1.0.0"
 
 kotlin {
     androidTarget {
@@ -57,5 +61,53 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+
+    coordinates(
+        groupId = "io.github.kotalsumit",
+        artifactId = "compose-super-charts",
+        version = "1.0.0"
+    )
+
+    pom {
+        name.set("Compose Super Charts")
+        description.set("A Compose Multiplatform charting library for Android, iOS, and desktop.")
+        inceptionYear.set("2026")
+        url.set("https://github.com/kotalsumit/compose-super-charts")
+
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+            }
+        }
+
+        developers {
+            developer {
+                id.set("kotalsumit")
+                name.set("Sumit Kotal")
+                url.set("https://github.com/kotalsumit")
+            }
+        }
+
+        scm {
+            url.set("https://github.com/kotalsumit/compose-super-charts")
+            connection.set("scm:git:git://github.com/kotalsumit/compose-super-charts.git")
+            developerConnection.set("scm:git:ssh://git@github.com/kotalsumit/compose-super-charts.git")
+        }
+    }
+}
+
+tasks.withType<org.gradle.plugins.signing.Sign>().configureEach {
+    onlyIf {
+        gradle.startParameter.taskNames.none { taskName ->
+            taskName.contains("MavenLocal")
+        }
     }
 }

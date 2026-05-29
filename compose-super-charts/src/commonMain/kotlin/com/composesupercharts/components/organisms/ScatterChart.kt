@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.semantics
 import com.composesupercharts.utils.ChartAccessibility.scatterChartDescription
+import com.composesupercharts.utils.formatOneDecimal
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.drawText
@@ -224,7 +225,7 @@ fun ScatterChart(
                                 contentAlignment = Alignment.TopCenter
                             ) {
                                 com.composesupercharts.components.atoms.ChartText(
-                                    text = String.format("%.1f", labelX),
+                                    text = labelX.formatOneDecimal(),
                                     style = config.labelTextStyle,
                                     modifier = Modifier
                                         .rotatedLayout(config.xAxisLabelRotation)

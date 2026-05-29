@@ -40,6 +40,7 @@ This file tracks release-ready changes in Compose Super Charts. Keep entries sho
 - Refreshed the README to match the current chart list and project structure.
 - Updated contributor notes with chart behavior checks and testing guidance.
 - Fixed outdated wording and stale release notes.
+- Added Maven Central publishing setup and installation notes.
 
 ## Earlier Work
 
