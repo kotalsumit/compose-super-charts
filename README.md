@@ -116,7 +116,6 @@ Before publishing, create and verify the `io.github.kotalsumit` namespace in Mav
 ```text
 MAVEN_CENTRAL_USERNAME
 MAVEN_CENTRAL_PASSWORD
-SIGNING_KEY_ID
 SIGNING_PASSWORD
 GPG_KEY_CONTENTS_BASE64
 ```
