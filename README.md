@@ -118,7 +118,7 @@ MAVEN_CENTRAL_USERNAME
 MAVEN_CENTRAL_PASSWORD
 SIGNING_KEY_ID
 SIGNING_PASSWORD
-GPG_KEY_CONTENTS
+GPG_KEY_CONTENTS_BASE64
 ```
 
 The release workflow runs when a GitHub release is published. It uploads artifacts to Maven Central, where the deployment can be reviewed and released.
