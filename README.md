@@ -91,7 +91,7 @@ After the first Maven Central release is available, add:
 
 ```kotlin
 dependencies {
-    implementation("io.github.kotalsumit:compose-super-charts:1.0.0")
+    implementation("io.github.kotalsumit:compose-super-charts:1.1.0")
 }
 ```
 

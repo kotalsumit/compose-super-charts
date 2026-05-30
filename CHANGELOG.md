@@ -2,7 +2,7 @@
 
 This file tracks release-ready changes in Compose Super Charts. Keep entries short, specific, and useful for people deciding what to test or contribute next.
 
-## Current Release
+## 1.1.0 - 2026-05-30
 
 ### Charts
 - Added area chart support using the line chart data model with fill enabled by default.

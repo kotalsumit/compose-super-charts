@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "io.github.kotalsumit"
-version = "1.0.0"
+version = "1.1.0"
 
 kotlin {
     androidTarget {
@@ -73,7 +73,7 @@ mavenPublishing {
     coordinates(
         groupId = "io.github.kotalsumit",
         artifactId = "compose-super-charts",
-        version = "1.0.0"
+        version = "1.1.0"
     )
 
     pom {
