@@ -14,6 +14,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.composesupercharts.components.atoms.ChartText
+import com.composesupercharts.models.LegendContentAlignment
+import com.composesupercharts.models.LegendLayoutMode
+import com.composesupercharts.models.LegendStyleConfig
 
 data class LegendItemData(
     val label: String,
@@ -39,48 +42,106 @@ fun UniversalLegend(
     shape: LegendShape = LegendShape.CIRCLE,
     shapeSize: Dp = 10.dp,
     itemSpacing: Dp = 16.dp,
+    rowSpacing: Dp = 8.dp,
+    contentAlignment: LegendContentAlignment = LegendContentAlignment.CENTER,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    layoutMode: LegendLayoutMode = LegendLayoutMode.FLOW_ROW,
+    showWhenSingleSeries: Boolean = true,
+    legendStyle: LegendStyleConfig? = null,
     hiddenItemIndexes: Set<Int> = emptySet(),
     onItemClick: ((Int) -> Unit)? = null
 ) {
-    FlowRow(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items.forEachIndexed { index, item ->
-            val isHidden = index in hiddenItemIndexes
+    val effectiveItemSpacing = legendStyle?.itemSpacing ?: itemSpacing
+    val effectiveRowSpacing = legendStyle?.rowSpacing ?: rowSpacing
+    val effectiveAlignment = legendStyle?.contentAlignment ?: contentAlignment
+    val effectivePadding = legendStyle?.contentPadding ?: contentPadding
+    val effectiveLayoutMode = legendStyle?.layoutMode ?: layoutMode
+    val effectiveShowSingleSeries = legendStyle?.showWhenSingleSeries ?: showWhenSingleSeries
+
+    if (items.isEmpty() || (items.size == 1 && !effectiveShowSingleSeries)) return
+
+    val legendModifier = modifier
+        .fillMaxWidth()
+        .padding(effectivePadding)
+
+    when (effectiveLayoutMode) {
+        LegendLayoutMode.ROW -> {
             Row(
+                modifier = legendModifier,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .padding(horizontal = itemSpacing / 2)
-                    .then(
-                        if (onItemClick != null) {
-                            Modifier.clickable { onItemClick(index) }
-                        } else {
-                            Modifier
-                        }
-                    )
+                horizontalArrangement = Arrangement.spacedBy(effectiveItemSpacing, effectiveAlignment.toHorizontalAlignment())
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(shapeSize)
-                        .clip(
-                            when (shape) {
-                                LegendShape.CIRCLE -> CircleShape
-                                LegendShape.SQUARE -> RoundedCornerShape(0.dp)
-                                LegendShape.ROUNDED_SQUARE -> RoundedCornerShape(2.dp)
-                            }
-                        )
-                        .background(item.color.copy(alpha = if (isHidden) 0.28f else 1f))
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                ChartText(
-                    text = item.label,
-                    style = textStyle.copy(color = textStyle.color.copy(alpha = if (isHidden) 0.45f else 1f))
-                )
+                items.forEachIndexed { index, item ->
+                    UniversalLegendItem(index, item, textStyle, shape, shapeSize, hiddenItemIndexes, onItemClick)
+                }
             }
         }
+
+        LegendLayoutMode.FLOW_ROW -> {
+            FlowRow(
+                modifier = legendModifier,
+                horizontalArrangement = Arrangement.spacedBy(effectiveItemSpacing, effectiveAlignment.toHorizontalAlignment()),
+                verticalArrangement = Arrangement.spacedBy(effectiveRowSpacing)
+            ) {
+                items.forEachIndexed { index, item ->
+                    UniversalLegendItem(index, item, textStyle, shape, shapeSize, hiddenItemIndexes, onItemClick)
+                }
+            }
+        }
+
+        LegendLayoutMode.COLUMN -> {
+            Column(
+                modifier = legendModifier,
+                horizontalAlignment = effectiveAlignment.toHorizontalAlignment(),
+                verticalArrangement = Arrangement.spacedBy(effectiveRowSpacing)
+            ) {
+                items.forEachIndexed { index, item ->
+                    UniversalLegendItem(index, item, textStyle, shape, shapeSize, hiddenItemIndexes, onItemClick)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UniversalLegendItem(
+    index: Int,
+    item: LegendItemData,
+    textStyle: TextStyle,
+    shape: LegendShape,
+    shapeSize: Dp,
+    hiddenItemIndexes: Set<Int>,
+    onItemClick: ((Int) -> Unit)?
+) {
+    val isHidden = index in hiddenItemIndexes
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = if (onItemClick != null) Modifier.clickable { onItemClick(index) } else Modifier
+    ) {
+        Box(
+            modifier = Modifier
+                .size(shapeSize)
+                .clip(
+                    when (shape) {
+                        LegendShape.CIRCLE -> CircleShape
+                        LegendShape.SQUARE -> RoundedCornerShape(0.dp)
+                        LegendShape.ROUNDED_SQUARE -> RoundedCornerShape(2.dp)
+                    }
+                )
+                .background(item.color.copy(alpha = if (isHidden) 0.28f else 1f))
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        ChartText(
+            text = item.label,
+            style = textStyle.copy(color = textStyle.color.copy(alpha = if (isHidden) 0.45f else 1f))
+        )
+    }
+}
+
+private fun LegendContentAlignment.toHorizontalAlignment(): Alignment.Horizontal {
+    return when (this) {
+        LegendContentAlignment.START -> Alignment.Start
+        LegendContentAlignment.CENTER -> Alignment.CenterHorizontally
+        LegendContentAlignment.END -> Alignment.End
     }
 }

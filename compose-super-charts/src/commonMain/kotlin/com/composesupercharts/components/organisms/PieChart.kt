@@ -96,7 +96,12 @@ fun PieChart(
                 textStyle = config.legendTextStyle,
                 shape = LegendShape.CIRCLE,
                 shapeSize = config.legendShapeSize,
-                itemSpacing = config.legendItemSpacing
+                itemSpacing = config.legendItemSpacing,
+                rowSpacing = config.legendRowSpacing,
+                contentAlignment = config.legendContentAlignment,
+                contentPadding = config.legendContentPadding,
+                layoutMode = config.legendLayoutMode,
+                showWhenSingleSeries = config.showLegendWhenSingleSeries
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -312,7 +317,12 @@ fun PieChart(
                 textStyle = config.legendTextStyle,
                 shape = LegendShape.CIRCLE,
                 shapeSize = config.legendShapeSize,
-                itemSpacing = config.legendItemSpacing
+                itemSpacing = config.legendItemSpacing,
+                rowSpacing = config.legendRowSpacing,
+                contentAlignment = config.legendContentAlignment,
+                contentPadding = config.legendContentPadding,
+                layoutMode = config.legendLayoutMode,
+                showWhenSingleSeries = config.showLegendWhenSingleSeries
             )
         }
     }

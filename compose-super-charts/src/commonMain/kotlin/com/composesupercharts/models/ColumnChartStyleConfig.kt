@@ -1,5 +1,6 @@
 package com.composesupercharts.models
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +40,12 @@ data class ColumnChartStyleConfig(
     val legendPosition: LegendPosition = LegendPosition.TOP,
     val legendTextStyle: TextStyle = TextStyle(color = Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Normal),
     val legendItemSpacing: Dp = 24.dp,
+    val legendRowSpacing: Dp = 8.dp,
+    val legendContentAlignment: LegendContentAlignment = LegendContentAlignment.CENTER,
+    val legendContentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    val legendLayoutMode: LegendLayoutMode = LegendLayoutMode.FLOW_ROW,
+    val showLegendWhenSingleSeries: Boolean = true,
+    val legendToggleMode: LegendToggleMode = LegendToggleMode.NONE,
     val legendBarWidth: Dp = 12.dp,
     val legendBarHeight: Dp = 12.dp,
     val legendBarRadius: Dp = 2.dp,

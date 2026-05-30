@@ -58,6 +58,7 @@ import com.composesupercharts.models.ColumnChartData
 import com.composesupercharts.models.ColumnChartStyleConfig
 import com.composesupercharts.models.ColumnChartType
 import com.composesupercharts.models.LegendPosition
+import com.composesupercharts.models.LegendToggleMode
 import com.composesupercharts.models.TooltipBubbleData
 import com.composesupercharts.models.XAxisPosition
 
@@ -85,6 +86,13 @@ fun ColumnChart(
 
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     var hiddenSeriesIndexes by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    val legendToggleMode = when {
+        config.legendToggleMode != LegendToggleMode.NONE -> config.legendToggleMode
+        config.allowLegendToggle -> LegendToggleMode.HIDE_SERIES
+        else -> LegendToggleMode.NONE
+    }
+    val hiddenColumnIndexes = if (legendToggleMode == LegendToggleMode.HIDE_SERIES) hiddenSeriesIndexes else emptySet()
+    val dimmedColumnIndexes = if (legendToggleMode == LegendToggleMode.DIM_SERIES) hiddenSeriesIndexes else emptySet()
     val maxOfY = remember(data, maxY, config.type) {
         val highest = data.points.maxOf { point ->
             if (config.type == ColumnChartType.STACKED) point.values.sum() else point.values.maxOrNull() ?: 1f
@@ -130,8 +138,13 @@ fun ColumnChart(
                 shape = LegendShape.ROUNDED_SQUARE,
                 shapeSize = config.legendBarWidth, // using existing config for backward compatibility
                 itemSpacing = config.legendItemSpacing,
+                rowSpacing = config.legendRowSpacing,
+                contentAlignment = config.legendContentAlignment,
+                contentPadding = config.legendContentPadding,
+                layoutMode = config.legendLayoutMode,
+                showWhenSingleSeries = config.showLegendWhenSingleSeries,
                 hiddenItemIndexes = hiddenSeriesIndexes,
-                onItemClick = if (config.allowLegendToggle) { index ->
+                onItemClick = if (legendToggleMode != LegendToggleMode.NONE) { index ->
                     hiddenSeriesIndexes = if (index in hiddenSeriesIndexes) hiddenSeriesIndexes - index else hiddenSeriesIndexes + index
                 } else null
             )
@@ -232,11 +245,11 @@ fun ColumnChart(
                                 
                                 when (config.type) {
                                     ColumnChartType.STANDARD -> {
-                                        if (0 in hiddenSeriesIndexes) return@forEachIndexed
+                                        if (0 in hiddenColumnIndexes) return@forEachIndexed
                                         val val0 = point.values.getOrNull(0) ?: 0f
                                         val barHeight = (val0 / maxOfY) * size.height * progress
                                         drawRoundRect(
-                                            color = point.colors.getOrNull(0) ?: Color.Gray,
+                                            color = (point.colors.getOrNull(0) ?: Color.Gray).copy(alpha = if (0 in dimmedColumnIndexes) 0.28f else 1f),
                                             topLeft = Offset(centerX - config.barWidth.toPx() / 2, size.height - barHeight),
                                             size = Size(config.barWidth.toPx(), barHeight),
                                             cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
@@ -251,13 +264,13 @@ fun ColumnChart(
                                         val clusterWidth = (config.barWidth.toPx() * point.values.size) + (config.clusterSpacing.toPx() * (point.values.size - 1))
                                         var currentX = centerX - clusterWidth / 2
                                         point.values.forEachIndexed valueLoop@{ valIdx, value ->
-                                            if (valIdx in hiddenSeriesIndexes) {
+                                            if (valIdx in hiddenColumnIndexes) {
                                                 currentX += config.barWidth.toPx() + config.clusterSpacing.toPx()
                                                 return@valueLoop
                                             }
                                             val barHeight = (value / maxOfY) * size.height * progress
                                             drawRoundRect(
-                                                color = point.colors.getOrNull(valIdx) ?: Color.Gray,
+                                                color = (point.colors.getOrNull(valIdx) ?: Color.Gray).copy(alpha = if (valIdx in dimmedColumnIndexes) 0.28f else 1f),
                                                 topLeft = Offset(currentX, size.height - barHeight),
                                                 size = Size(config.barWidth.toPx(), barHeight),
                                                 cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
@@ -273,10 +286,10 @@ fun ColumnChart(
                                     ColumnChartType.STACKED -> {
                                         var currentY = size.height
                                         point.values.forEachIndexed valueLoop@{ valIdx, value ->
-                                            if (valIdx in hiddenSeriesIndexes) return@valueLoop
+                                            if (valIdx in hiddenColumnIndexes) return@valueLoop
                                             val barHeight = (value / maxOfY) * size.height * progress
                                             drawRect(
-                                                color = point.colors.getOrNull(valIdx) ?: Color.Gray,
+                                                color = (point.colors.getOrNull(valIdx) ?: Color.Gray).copy(alpha = if (valIdx in dimmedColumnIndexes) 0.28f else 1f),
                                                 topLeft = Offset(centerX - config.barWidth.toPx() / 2, currentY - barHeight),
                                                 size = Size(config.barWidth.toPx(), barHeight)
                                             )
@@ -300,7 +313,7 @@ fun ColumnChart(
                                 TooltipBubble(
                                     xPosition = with(density) { centerX.toPx() },
                                     labels = point.tooltipData ?: point.values.mapIndexedNotNull { idx, v ->
-                                        if (idx in hiddenSeriesIndexes) null else TooltipBubbleData(legendLabels?.getOrNull(idx) ?: "Value", config.valueFormatter?.invoke(v) ?: v.toInt().toString())
+                                        if (idx in hiddenColumnIndexes) null else TooltipBubbleData(legendLabels?.getOrNull(idx) ?: "Value", config.valueFormatter?.invoke(v) ?: v.toInt().toString())
                                     },
                                     isFirst = index == 0,
                                     isLast = index == data.points.lastIndex,
@@ -353,8 +366,13 @@ fun ColumnChart(
                 shape = LegendShape.ROUNDED_SQUARE,
                 shapeSize = config.legendBarWidth,
                 itemSpacing = config.legendItemSpacing,
+                rowSpacing = config.legendRowSpacing,
+                contentAlignment = config.legendContentAlignment,
+                contentPadding = config.legendContentPadding,
+                layoutMode = config.legendLayoutMode,
+                showWhenSingleSeries = config.showLegendWhenSingleSeries,
                 hiddenItemIndexes = hiddenSeriesIndexes,
-                onItemClick = if (config.allowLegendToggle) { index ->
+                onItemClick = if (legendToggleMode != LegendToggleMode.NONE) { index ->
                     hiddenSeriesIndexes = if (index in hiddenSeriesIndexes) hiddenSeriesIndexes - index else hiddenSeriesIndexes + index
                 } else null
             )

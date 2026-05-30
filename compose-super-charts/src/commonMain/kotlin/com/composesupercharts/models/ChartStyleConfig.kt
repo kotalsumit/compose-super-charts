@@ -1,6 +1,7 @@
 package com.composesupercharts.models
 
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -136,6 +137,12 @@ data class ChartStyleConfig(
     val xAxisDividerColor: Color = Color.LightGray,
     val xAxisLabelRotation: Float = -45f,
     val legendItemSpacing: Dp = 24.dp,
+    val legendRowSpacing: Dp = 8.dp,
+    val legendContentAlignment: LegendContentAlignment = LegendContentAlignment.CENTER,
+    val legendContentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    val legendLayoutMode: LegendLayoutMode = LegendLayoutMode.ROW,
+    val showLegendWhenSingleSeries: Boolean = true,
+    val legendToggleMode: LegendToggleMode = LegendToggleMode.NONE,
     val legendShapeWidth: Dp = 40.dp,
     val legendShapeHeight: Dp = 12.dp,
     val tooltipDashColor: Color? = null,

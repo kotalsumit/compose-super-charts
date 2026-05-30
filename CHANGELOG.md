@@ -17,6 +17,7 @@ This file tracks release-ready changes in Compose Super Charts. Keep entries sho
 - Added custom tooltip content hooks for line-style charts.
 - Added optional legend item toggling for supported multi-series charts.
 - Added custom legend item and marker rendering hooks for line-style charts.
+- Added legend alignment, padding, layout mode, row spacing, and single-series visibility controls across shared legend implementations.
 - Added optional value labels for supported bar, column, and combined chart views.
 - Added scatter chart crosshair rendering for selected points.
 - Added pie chart center label and center value options.
@@ -24,6 +25,7 @@ This file tracks release-ready changes in Compose Super Charts. Keep entries sho
 
 ### Layout And Accessibility
 - Added shared chart state helpers for empty, loading, and error states.
+- Added `ChartScaffold` and `AnalyticsChartCard` for product-style chart slots, headers, footers, overlays, and summary content.
 - Added accessibility descriptions for chart semantics, including area, combined, and range charts.
 - Added null-gap handling for line and area charts so missing values do not fall to zero.
 - Added separate axis, tooltip, x-axis, and accessibility formatter hooks for line-style charts.

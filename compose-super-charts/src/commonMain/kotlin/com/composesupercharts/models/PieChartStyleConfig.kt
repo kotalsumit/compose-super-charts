@@ -1,5 +1,6 @@
 package com.composesupercharts.models
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -23,6 +24,11 @@ data class PieChartStyleConfig(
     val backgroundColor: Color = Color.Transparent,
     val chartSize: Dp = 250.dp,
     val legendItemSpacing: Dp = 16.dp,
+    val legendRowSpacing: Dp = 8.dp,
+    val legendContentAlignment: LegendContentAlignment = LegendContentAlignment.CENTER,
+    val legendContentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    val legendLayoutMode: LegendLayoutMode = LegendLayoutMode.FLOW_ROW,
+    val showLegendWhenSingleSeries: Boolean = true,
     val legendShapeSize: Dp = 12.dp,
     val activeSliceOffsetRatio: Float = 0.1f,
     val tooltipOffsetRatio: Float = 0.7f,

@@ -76,7 +76,12 @@ fun CombinedChart(
                 textStyle = config.legendTextStyle,
                 shape = LegendShape.ROUNDED_SQUARE,
                 shapeSize = config.legendShapeSize,
-                itemSpacing = config.legendItemSpacing
+                itemSpacing = config.legendItemSpacing,
+                rowSpacing = config.legendRowSpacing,
+                contentAlignment = config.legendContentAlignment,
+                contentPadding = config.legendContentPadding,
+                layoutMode = config.legendLayoutMode,
+                showWhenSingleSeries = config.showLegendWhenSingleSeries
             )
         }
 
@@ -179,7 +184,12 @@ fun CombinedChart(
                 textStyle = config.legendTextStyle,
                 shape = LegendShape.ROUNDED_SQUARE,
                 shapeSize = config.legendShapeSize,
-                itemSpacing = config.legendItemSpacing
+                itemSpacing = config.legendItemSpacing,
+                rowSpacing = config.legendRowSpacing,
+                contentAlignment = config.legendContentAlignment,
+                contentPadding = config.legendContentPadding,
+                layoutMode = config.legendLayoutMode,
+                showWhenSingleSeries = config.showLegendWhenSingleSeries
             )
         }
     }

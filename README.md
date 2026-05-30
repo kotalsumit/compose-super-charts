@@ -31,11 +31,13 @@ The library is being prepared for release. The sample app is the quickest way to
 - Per-chart data and style configuration objects.
 - Shared tooltip component with edge clamping, optional close button, and auto-dismiss timing.
 - Shared legends with top, bottom, and hidden positions.
+- Legend alignment, padding, row/flow/column layout modes, row spacing, and single-series visibility controls.
 - Optional legend item toggling for supported multi-series charts.
 - Optional value labels and formatter callbacks where the chart supports them.
 - Null-aware line and area rendering with configurable gap behavior.
 - Separate y-axis, x-axis, tooltip, and accessibility formatters for line-style charts.
 - Custom tooltip and legend renderer hooks for product-specific UI.
+- Optional `ChartScaffold` and `AnalyticsChartCard` wrappers for chart headers, overlays, footers, summary values, and product-specific actions.
 - Empty, loading, and error state helpers through `ChartDisplayState` and `ChartStateView`.
 - Accessibility description helpers for chart semantics.
 - Sample screens for every chart type, including controls for common configuration options.
@@ -54,7 +56,7 @@ Library code is grouped by responsibility:
 
 ```text
 components/atoms/         Small reusable UI pieces
-components/molecules/     Shared chart pieces such as legends, tooltips, and state views
+components/molecules/     Shared chart pieces such as legends, tooltips, slots, cards, and state views
 components/organisms/     Complete chart composables
 models/                   Data and style configuration objects
 utils/                    Accessibility, formatting, modifiers, and export helpers
@@ -162,6 +164,9 @@ LineChart(
             )
         ),
         legendPosition = LegendPosition.BOTTOM,
+        legendContentAlignment = LegendContentAlignment.START,
+        legendContentPadding = PaddingValues(horizontal = 0.dp),
+        legendLayoutMode = LegendLayoutMode.ROW,
         xAxisLabelRotation = -35f,
         nullPointBehavior = NullPointBehavior.BreakSegment,
         areaFillBehavior = AreaFillBehavior.CloseToBaselinePerSegment,
@@ -174,6 +179,8 @@ LineChart(
 ```
 
 For product UIs that need their own tooltip or legend presentation, pass `tooltipContent`, `legendItemRenderer`, or `legendMarkerRenderer` in `ChartStyleConfig`. These hooks are optional; the built-in tooltip and legend remain the default.
+
+Use `ChartScaffold` when the chart needs local header, footer, or overlay content without creating another app-side wrapper. Use `AnalyticsChartCard` when a product screen wants a reusable card with a title, summary value, action slot, and chart content.
 
 ## Contributing
 

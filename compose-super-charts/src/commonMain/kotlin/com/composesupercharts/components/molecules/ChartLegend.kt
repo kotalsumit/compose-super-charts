@@ -8,6 +8,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,7 +28,9 @@ import com.composesupercharts.components.atoms.ChartText
 import com.composesupercharts.models.ChartLineConfig
 import com.composesupercharts.models.ChartStyleConfig
 import com.composesupercharts.models.HollowPoint
+import com.composesupercharts.models.LegendContentAlignment
 import com.composesupercharts.models.LegendItemScope
+import com.composesupercharts.models.LegendLayoutMode
 
 /**
  * A standard legend molecule for charts.
@@ -38,6 +42,7 @@ import com.composesupercharts.models.LegendItemScope
  * @param legendLabels Human-readable names for the chart series.
  * @param config The shared chart style configuration.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ChartLegend(
     modifier: Modifier = Modifier,
@@ -46,6 +51,8 @@ fun ChartLegend(
     hiddenSeriesIndexes: Set<Int> = emptySet(),
     onLegendClick: ((Int) -> Unit)? = null
 ) {
+    if (legendLabels.isEmpty() || (legendLabels.size == 1 && !config.showLegendWhenSingleSeries)) return
+
     val showLegend = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { showLegend.value = true }
@@ -58,31 +65,69 @@ fun ChartLegend(
                     initialOffsetY = { -it / 4 }
                 )
     ) {
-        Row(
-            modifier = modifier.then(config.legendModifier).fillMaxWidth().padding(vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(config.legendItemSpacing)
-            ) {
-                legendLabels.forEachIndexed { index, label ->
-                    val lineConfig = config.lines.getOrNull(index)
-                    if (lineConfig != null) {
-                        LegendItem(
-                            index = index,
-                            label = label,
-                            lineConfig = lineConfig,
-                            config = config,
-                            isHidden = index in hiddenSeriesIndexes,
-                            onClick = onLegendClick?.let { click -> { click(index) } }
-                        )
+        val legendModifier = modifier
+            .then(config.legendModifier)
+            .fillMaxWidth()
+            .padding(config.legendContentPadding)
+            .padding(vertical = 8.dp)
+
+        when (config.legendLayoutMode) {
+            LegendLayoutMode.ROW -> {
+                Row(
+                    modifier = legendModifier,
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(config.legendItemSpacing, config.legendContentAlignment.toHorizontalAlignment())
+                ) {
+                    legendLabels.forEachIndexed { index, label ->
+                        LineLegendItem(index, label, config, hiddenSeriesIndexes, onLegendClick)
+                    }
+                }
+            }
+
+            LegendLayoutMode.FLOW_ROW -> {
+                FlowRow(
+                    modifier = legendModifier,
+                    horizontalArrangement = Arrangement.spacedBy(config.legendItemSpacing, config.legendContentAlignment.toHorizontalAlignment()),
+                    verticalArrangement = Arrangement.spacedBy(config.legendRowSpacing)
+                ) {
+                    legendLabels.forEachIndexed { index, label ->
+                        LineLegendItem(index, label, config, hiddenSeriesIndexes, onLegendClick)
+                    }
+                }
+            }
+
+            LegendLayoutMode.COLUMN -> {
+                Column(
+                    modifier = legendModifier,
+                    horizontalAlignment = config.legendContentAlignment.toHorizontalAlignment(),
+                    verticalArrangement = Arrangement.spacedBy(config.legendRowSpacing)
+                ) {
+                    legendLabels.forEachIndexed { index, label ->
+                        LineLegendItem(index, label, config, hiddenSeriesIndexes, onLegendClick)
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun LineLegendItem(
+    index: Int,
+    label: String,
+    config: ChartStyleConfig,
+    hiddenSeriesIndexes: Set<Int>,
+    onLegendClick: ((Int) -> Unit)?
+) {
+    val lineConfig = config.lines.getOrNull(index) ?: return
+    LegendItem(
+        index = index,
+        label = label,
+        lineConfig = lineConfig,
+        config = config,
+        isHidden = index in hiddenSeriesIndexes,
+        onClick = onLegendClick?.let { click -> { click(index) } }
+    )
 }
 
 @Composable
@@ -128,5 +173,13 @@ private fun LegendItem(
         
         Spacer(modifier = Modifier.height(4.dp))
         ChartText(text = label, style = config.legendTextStyle.copy(color = config.legendTextStyle.color.copy(alpha = if (isHidden) 0.45f else 1f)))
+    }
+}
+
+private fun LegendContentAlignment.toHorizontalAlignment(): Alignment.Horizontal {
+    return when (this) {
+        LegendContentAlignment.START -> Alignment.Start
+        LegendContentAlignment.CENTER -> Alignment.CenterHorizontally
+        LegendContentAlignment.END -> Alignment.End
     }
 }

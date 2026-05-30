@@ -62,6 +62,13 @@ fun BarChart(
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     var tapOffset by remember { mutableStateOf(Offset.Zero) }
     var hiddenSeriesIndexes by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    val legendToggleMode = when {
+        config.legendToggleMode != LegendToggleMode.NONE -> config.legendToggleMode
+        config.allowLegendToggle -> LegendToggleMode.HIDE_SERIES
+        else -> LegendToggleMode.NONE
+    }
+    val hiddenBarIndexes = if (legendToggleMode == LegendToggleMode.HIDE_SERIES) hiddenSeriesIndexes else emptySet()
+    val dimmedBarIndexes = if (legendToggleMode == LegendToggleMode.DIM_SERIES) hiddenSeriesIndexes else emptySet()
 
     LaunchedEffect(data) {
         selectedIndex = null
@@ -112,8 +119,13 @@ fun BarChart(
                 shape = LegendShape.ROUNDED_SQUARE,
                 shapeSize = config.legendBarWidth,
                 itemSpacing = config.legendItemSpacing,
+                rowSpacing = config.legendRowSpacing,
+                contentAlignment = config.legendContentAlignment,
+                contentPadding = config.legendContentPadding,
+                layoutMode = config.legendLayoutMode,
+                showWhenSingleSeries = config.showLegendWhenSingleSeries,
                 hiddenItemIndexes = hiddenSeriesIndexes,
-                onItemClick = if (config.allowLegendToggle) { index ->
+                onItemClick = if (legendToggleMode != LegendToggleMode.NONE) { index ->
                     hiddenSeriesIndexes = if (index in hiddenSeriesIndexes) hiddenSeriesIndexes - index else hiddenSeriesIndexes + index
                 } else null
             )
@@ -186,11 +198,11 @@ fun BarChart(
                                 
                                 when (config.type) {
                                     BarChartType.STANDARD -> {
-                                        if (0 in hiddenSeriesIndexes) return@forEachIndexed
+                                        if (0 in hiddenBarIndexes) return@forEachIndexed
                                         val value = (point.values.getOrNull(0) ?: 0f) * progress
                                         val barWidth = (value / maxOfX) * size.width
                                         drawRoundRect(
-                                            color = point.colors.getOrNull(0) ?: Color.Gray,
+                                            color = (point.colors.getOrNull(0) ?: Color.Gray).copy(alpha = if (0 in dimmedBarIndexes) 0.28f else 1f),
                                             topLeft = Offset(0f, centerY - config.barThickness.toPx() / 2),
                                             size = Size(barWidth, config.barThickness.toPx()),
                                             cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
@@ -208,14 +220,14 @@ fun BarChart(
                                         val clusterThickness = (barThicknessPx * point.values.size) + (clusterSpacingPx * (point.values.size - 1))
                                         var currentY = centerY - clusterThickness / 2
                                         point.values.forEachIndexed valueLoop@{ valIdx, rawValue ->
-                                            if (valIdx in hiddenSeriesIndexes) {
+                                            if (valIdx in hiddenBarIndexes) {
                                                 currentY += barThicknessPx + clusterSpacingPx
                                                 return@valueLoop
                                             }
                                             val value = rawValue * progress
                                             val barWidth = (value / maxOfX) * size.width
                                             drawRoundRect(
-                                                color = point.colors.getOrNull(valIdx) ?: Color.Gray,
+                                                color = (point.colors.getOrNull(valIdx) ?: Color.Gray).copy(alpha = if (valIdx in dimmedBarIndexes) 0.28f else 1f),
                                                 topLeft = Offset(0f, currentY),
                                                 size = Size(barWidth, barThicknessPx),
                                                 cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
@@ -232,11 +244,11 @@ fun BarChart(
                                         val barThicknessPx = config.barThickness.toPx()
                                         var currentX = 0f
                                         point.values.forEachIndexed valueLoop@{ valIdx, rawValue ->
-                                            if (valIdx in hiddenSeriesIndexes) return@valueLoop
+                                            if (valIdx in hiddenBarIndexes) return@valueLoop
                                             val value = rawValue * progress
                                             val barWidth = (value / maxOfX) * size.width
                                             drawRect(
-                                                color = point.colors.getOrNull(valIdx) ?: Color.Gray,
+                                                color = (point.colors.getOrNull(valIdx) ?: Color.Gray).copy(alpha = if (valIdx in dimmedBarIndexes) 0.28f else 1f),
                                                 topLeft = Offset(currentX, centerY - barThicknessPx / 2),
                                                 size = Size(barWidth, barThicknessPx)
                                             )
@@ -276,7 +288,7 @@ fun BarChart(
                                 TooltipBubble(
                                     xPosition = barWidthPx,
                                     labels = point.tooltipData ?: point.values.mapIndexedNotNull { idx, v ->
-                                        if (idx in hiddenSeriesIndexes) null else TooltipBubbleData(legendLabels?.getOrNull(idx) ?: "Value", config.valueFormatter?.invoke(v) ?: v.toInt().toString())
+                                        if (idx in hiddenBarIndexes) null else TooltipBubbleData(legendLabels?.getOrNull(idx) ?: "Value", config.valueFormatter?.invoke(v) ?: v.toInt().toString())
                                     },
                                     isFirst = index == 0,
                                     isLast = barWidthPx > chartWidth * 0.5f,
@@ -332,8 +344,13 @@ fun BarChart(
                 shape = LegendShape.ROUNDED_SQUARE,
                 shapeSize = config.legendBarWidth,
                 itemSpacing = config.legendItemSpacing,
+                rowSpacing = config.legendRowSpacing,
+                contentAlignment = config.legendContentAlignment,
+                contentPadding = config.legendContentPadding,
+                layoutMode = config.legendLayoutMode,
+                showWhenSingleSeries = config.showLegendWhenSingleSeries,
                 hiddenItemIndexes = hiddenSeriesIndexes,
-                onItemClick = if (config.allowLegendToggle) { index ->
+                onItemClick = if (legendToggleMode != LegendToggleMode.NONE) { index ->
                     hiddenSeriesIndexes = if (index in hiddenSeriesIndexes) hiddenSeriesIndexes - index else hiddenSeriesIndexes + index
                 } else null
             )

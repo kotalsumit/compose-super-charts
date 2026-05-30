@@ -52,6 +52,7 @@ import com.composesupercharts.models.ChartPointData
 import com.composesupercharts.models.ChartStyleConfig
 import com.composesupercharts.models.AreaFillBehavior
 import com.composesupercharts.models.LegendPosition
+import com.composesupercharts.models.LegendToggleMode
 import com.composesupercharts.models.HollowPoint
 import com.composesupercharts.models.NullPointBehavior
 import com.composesupercharts.models.SolidPoint
@@ -111,7 +112,14 @@ fun LineChart(
 
     var selectedIndex by remember(points) { mutableStateOf<Int?>(null) }
     var hiddenSeriesIndexes by remember(config.lines.size) { mutableStateOf<Set<Int>>(emptySet()) }
-    val visibleLineIndexes = config.lines.indices.filter { config.lines[it].isVisible && it !in hiddenSeriesIndexes }
+    val legendToggleMode = when {
+        config.legendToggleMode != LegendToggleMode.NONE -> config.legendToggleMode
+        config.allowLegendToggle -> LegendToggleMode.HIDE_SERIES
+        else -> LegendToggleMode.NONE
+    }
+    val hiddenLineIndexes = if (legendToggleMode == LegendToggleMode.HIDE_SERIES) hiddenSeriesIndexes else emptySet()
+    val dimmedLineIndexes = if (legendToggleMode == LegendToggleMode.DIM_SERIES) hiddenSeriesIndexes else emptySet()
+    val visibleLineIndexes = config.lines.indices.filter { config.lines[it].isVisible && it !in hiddenLineIndexes }
     
     // Zoom & Pan states
     var scaleX by remember { mutableStateOf(1f) }
@@ -164,7 +172,7 @@ fun LineChart(
                 legendLabels = legendLabels,
                 config = config,
                 hiddenSeriesIndexes = hiddenSeriesIndexes,
-                onLegendClick = if (config.allowLegendToggle) { index ->
+                onLegendClick = if (legendToggleMode != LegendToggleMode.NONE) { index ->
                     hiddenSeriesIndexes = if (index in hiddenSeriesIndexes) {
                         hiddenSeriesIndexes - index
                     } else {
@@ -329,7 +337,9 @@ fun LineChart(
                                 
                                 if (paths.fillPaths != null && lineConfig.fillGradientColors != null) {
                                     val gradientBrush = Brush.verticalGradient(
-                                        colors = lineConfig.fillGradientColors,
+                                        colors = lineConfig.fillGradientColors.map { color ->
+                                            color.copy(alpha = color.alpha * if (lineIndex in dimmedLineIndexes) 0.28f else 1f)
+                                        },
                                         startY = 0f,
                                         endY = size.height
                                     )
@@ -341,7 +351,7 @@ fun LineChart(
                                 paths.animatedPaths.forEach { animatedPath ->
                                     drawPath(
                                         path = animatedPath,
-                                        color = lineConfig.lineStyle.color.copy(alpha = lineConfig.lineStyle.alpha),
+                                        color = lineConfig.lineStyle.color.copy(alpha = lineConfig.lineStyle.alpha * if (lineIndex in dimmedLineIndexes) 0.28f else 1f),
                                         style = Stroke(
                                             width = lineConfig.lineStyle.width,
                                             pathEffect = lineConfig.lineStyle.pathEffect,
@@ -356,13 +366,13 @@ fun LineChart(
                                         val pStyle = lineConfig.pointStyle
                                         if (pStyle is SolidPoint) {
                                             drawCircle(
-                                                color = lineConfig.lineStyle.color.copy(alpha = lineConfig.lineStyle.alpha),
+                                                color = lineConfig.lineStyle.color.copy(alpha = lineConfig.lineStyle.alpha * if (lineIndex in dimmedLineIndexes) 0.28f else 1f),
                                                 radius = pStyle.radius * pointScale,
                                                 center = offset
                                             )
                                         } else if (pStyle is HollowPoint) {
                                             drawCircle(
-                                                color = lineConfig.lineStyle.color.copy(alpha = lineConfig.lineStyle.alpha),
+                                                color = lineConfig.lineStyle.color.copy(alpha = lineConfig.lineStyle.alpha * if (lineIndex in dimmedLineIndexes) 0.28f else 1f),
                                                 radius = pStyle.radius * pointScale,
                                                 center = offset,
                                                 style = Stroke(width = pStyle.strokeWidth)
@@ -439,7 +449,7 @@ fun LineChart(
                 legendLabels = legendLabels,
                 config = config,
                 hiddenSeriesIndexes = hiddenSeriesIndexes,
-                onLegendClick = if (config.allowLegendToggle) { index ->
+                onLegendClick = if (legendToggleMode != LegendToggleMode.NONE) { index ->
                     hiddenSeriesIndexes = if (index in hiddenSeriesIndexes) {
                         hiddenSeriesIndexes - index
                     } else {

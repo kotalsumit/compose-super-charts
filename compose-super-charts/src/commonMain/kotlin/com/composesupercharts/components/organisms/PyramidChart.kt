@@ -23,7 +23,10 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.composesupercharts.components.atoms.ChartText
+import com.composesupercharts.components.molecules.LegendItemData
+import com.composesupercharts.components.molecules.LegendShape
 import com.composesupercharts.components.molecules.TooltipBubble
+import com.composesupercharts.components.molecules.UniversalLegend
 import com.composesupercharts.models.*
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -236,31 +239,24 @@ fun PyramidChart(
             }
         }
 
-        if (config.legendPosition != LegendPosition.HIDDEN) {
+        if (config.legendPosition != LegendPosition.HIDDEN && (data.segments.size > 1 || config.showLegendWhenSingleSeries)) {
             PyramidLegend(data = data, config = config)
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PyramidLegend(data: PyramidChartData, config: PyramidChartStyleConfig) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        data.segments.forEach { segment ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            ) {
-                androidx.compose.foundation.Canvas(modifier = Modifier.size(12.dp)) {
-                    drawRect(color = segment.color)
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                ChartText(text = segment.label, style = config.legendTextStyle)
-            }
-        }
-    }
+    UniversalLegend(
+        items = data.segments.map { segment -> LegendItemData(segment.label, segment.color) },
+        textStyle = config.legendTextStyle,
+        shape = LegendShape.SQUARE,
+        shapeSize = 12.dp,
+        itemSpacing = config.legendItemSpacing,
+        rowSpacing = config.legendRowSpacing,
+        contentAlignment = config.legendContentAlignment,
+        contentPadding = config.legendContentPadding,
+        layoutMode = config.legendLayoutMode,
+        showWhenSingleSeries = config.showLegendWhenSingleSeries
+    )
 }
