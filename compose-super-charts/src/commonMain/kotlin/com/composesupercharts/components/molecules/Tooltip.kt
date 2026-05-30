@@ -1,15 +1,19 @@
 package com.composesupercharts.components.molecules
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import com.composesupercharts.components.atoms.ChartSurface
 import com.composesupercharts.components.atoms.ChartText
 import androidx.compose.runtime.Composable
@@ -23,6 +27,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.composesupercharts.models.ChartPointData
 import com.composesupercharts.models.ChartStyleConfig
+import com.composesupercharts.models.TooltipLayoutMode
 import com.composesupercharts.models.TooltipBubbleData
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -72,14 +77,36 @@ fun HighlightAndTooltip(
         val isFirst = index == 0
         val isLast = index == points.size - 1
 
-        TooltipBubble(
-            xPosition = xPosition,
-            labels = labels,
-            isFirst = isFirst,
-            isLast = isLast,
-            config = config,
-            onClose = onClose
-        )
+        config.tooltipContent?.let { content ->
+            val parentWidth = constraints.maxWidth
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(xPosition.toInt(), -10) }
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        layout(placeable.width, placeable.height) {
+                            val desiredShift = when {
+                                isFirst -> 0
+                                isLast -> -placeable.width
+                                else -> -(placeable.width / 2)
+                            }
+                            val minShift = -xPosition.toInt()
+                            val maxShift = parentWidth - xPosition.toInt() - placeable.width
+                            val finalShift = if (maxShift < minShift) minShift else desiredShift.coerceIn(minShift, maxShift)
+                            placeable.placeRelative(finalShift, 0)
+                        }
+                    }
+            ) {
+                content(index, labels, onClose)
+            }
+        } ?: TooltipBubble(
+                xPosition = xPosition,
+                labels = labels,
+                isFirst = isFirst,
+                isLast = isLast,
+                config = config,
+                onClose = onClose
+            )
     }
 }
 
@@ -136,29 +163,41 @@ fun TooltipBubble(
                         vertical = config.tooltipVerticalPadding
                     )
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.Start,
-                        modifier = Modifier.padding(end = if (config.showTooltipCloseButton) 24.dp else 0.dp)
-                    ) {
-                        labels.forEach { labelData ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            ) {
-                                labelData.labelName?.takeIf { it.isNotBlank() }?.let {
-                                    ChartText(
-                                        text = it,
-                                        style = config.tooltipLabelTextStyle,
-                                        modifier = Modifier.padding(end = config.tooltipInnerSpacing)
+                    val contentModifier = Modifier.padding(end = if (config.showTooltipCloseButton) 24.dp else 0.dp)
+
+                    if (config.tooltipLayoutMode == TooltipLayoutMode.Row) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(config.tooltipInnerSpacing),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = contentModifier
+                        ) {
+                            labels.forEachIndexed { index, labelData ->
+                                TooltipLabelValue(labelData, config)
+                                if (config.showTooltipDivider && index != labels.lastIndex) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(width = 1.dp, height = 24.dp)
+                                            .background(config.tooltipBorderColor)
                                     )
                                 }
-
-                                val valStr = if (labelData.value.isNullOrBlank()) "0" else labelData.value
-
-                                ChartText(
-                                    text = valStr,
-                                    style = config.tooltipValueTextStyle
-                                )
+                            }
+                        }
+                    } else {
+                        Column(
+                            horizontalAlignment = Alignment.Start,
+                            modifier = contentModifier
+                        ) {
+                            labels.forEachIndexed { index, labelData ->
+                                TooltipLabelValue(labelData, config)
+                                if (config.showTooltipDivider && index != labels.lastIndex) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
+                                            .height(1.dp)
+                                            .background(config.tooltipBorderColor)
+                                    )
+                                }
                             }
                         }
                     }
@@ -189,6 +228,32 @@ fun TooltipBubble(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TooltipLabelValue(
+    labelData: TooltipBubbleData,
+    config: ChartStyleConfig
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
+        labelData.labelName?.takeIf { it.isNotBlank() }?.let {
+            ChartText(
+                text = it,
+                style = config.tooltipLabelTextStyle,
+                modifier = Modifier.padding(end = config.tooltipInnerSpacing)
+            )
+        }
+
+        labelData.value?.takeIf { it.isNotBlank() }?.let { value ->
+            ChartText(
+                text = value,
+                style = config.tooltipValueTextStyle
+            )
         }
     }
 }

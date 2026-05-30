@@ -14,7 +14,9 @@ This file tracks release-ready changes in Compose Super Charts. Keep entries sho
 - Added shared tooltip edge clamping across chart implementations.
 - Improved tooltip placement near right edges and lower chart rows.
 - Added optional tooltip close buttons and auto-dismiss timing.
+- Added custom tooltip content hooks for line-style charts.
 - Added optional legend item toggling for supported multi-series charts.
+- Added custom legend item and marker rendering hooks for line-style charts.
 - Added optional value labels for supported bar, column, and combined chart views.
 - Added scatter chart crosshair rendering for selected points.
 - Added pie chart center label and center value options.
@@ -23,6 +25,9 @@ This file tracks release-ready changes in Compose Super Charts. Keep entries sho
 ### Layout And Accessibility
 - Added shared chart state helpers for empty, loading, and error states.
 - Added accessibility descriptions for chart semantics, including area, combined, and range charts.
+- Added null-gap handling for line and area charts so missing values do not fall to zero.
+- Added separate axis, tooltip, x-axis, and accessibility formatter hooks for line-style charts.
+- Added explicit null point and area fill behavior policies for line and area charts.
 - Improved candlestick width and y-axis spacing when the y-axis is visible.
 - Improved range chart tooltip anchoring for bottom rows and reversed intervals.
 - Improved combined chart value label placement near the top edge.

@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.composesupercharts.components.organisms.*
 import com.composesupercharts.models.*
+import com.composesupercharts.utils.formatOneDecimal
 
 @Composable
 fun App() {
@@ -277,6 +278,8 @@ fun LineChartScreen(onBack: () -> Unit) {
     var yAxisColor by remember { mutableStateOf(Color.LightGray) }
     var showTooltipClose by remember { mutableStateOf(true) }
     var autoDismiss by remember { mutableStateOf<Long?>(null) }
+    var showNullGaps by remember { mutableStateOf(false) }
+    var compactAxis by remember { mutableStateOf(false) }
 
     val colors = listOf(Color(0xFF42A5F5), Color(0xFFEF5350), Color(0xFF66BB6A), Color(0xFFFFA726), Color(0xFFAB47BC))
     val lineNames = listOf("Product A", "Product B", "Product C", "Product D", "Product E")
@@ -285,11 +288,12 @@ fun LineChartScreen(onBack: () -> Unit) {
     val displayPoints = if (isScrollable) basePoints else basePoints.take(7)
 
     val points = displayPoints.mapIndexed { index, day ->
-        val yVals = List(lineCount) { lineIdx ->
-            (20f + (lineIdx * 10f) + (index * 5f) % 25f)
+        val yVals: List<Float?> = List(lineCount) { lineIdx ->
+            val value = 20f + (lineIdx * 10f) + (index * 5f) % 25f
+            if (showNullGaps && lineIdx == 0 && index in 2..3) null else value
         }
         val tooltipLabels = List(lineCount) { lineIdx ->
-            TooltipBubbleData(lineNames[lineIdx], yVals[lineIdx].toInt().toString())
+            TooltipBubbleData(lineNames[lineIdx], yVals[lineIdx]?.toInt()?.toString())
         }
         ChartPointData(xLabel = day, yValues = yVals, highlightLabels = tooltipLabels)
     }
@@ -313,7 +317,10 @@ fun LineChartScreen(onBack: () -> Unit) {
         yAxisDividerColor = yAxisColor,
         xAxisDividerColor = yAxisColor,
         showTooltipCloseButton = showTooltipClose,
-        tooltipAutoDismissMs = autoDismiss
+        tooltipAutoDismissMs = autoDismiss,
+        nullPointBehavior = NullPointBehavior.BreakSegment,
+        yAxisTickFormatter = if (compactAxis) { value -> "${(value / 10f).formatOneDecimal()}" } else null,
+        tooltipValueFormatter = { value -> value.toInt().toString() }
     )
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
@@ -337,6 +344,16 @@ fun LineChartScreen(onBack: () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
             Checkbox(checked = isScrollable, onCheckedChange = { isScrollable = it })
             Text("Enable Horizontal Scrolling")
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = showNullGaps, onCheckedChange = { showNullGaps = it })
+            Text("Preserve null gaps")
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = compactAxis, onCheckedChange = { compactAxis = it })
+            Text("Compact y-axis labels")
         }
 
         Text("Legend Position", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))

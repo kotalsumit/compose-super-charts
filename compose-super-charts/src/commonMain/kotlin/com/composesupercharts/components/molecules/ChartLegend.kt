@@ -26,8 +26,7 @@ import com.composesupercharts.components.atoms.ChartText
 import com.composesupercharts.models.ChartLineConfig
 import com.composesupercharts.models.ChartStyleConfig
 import com.composesupercharts.models.HollowPoint
-import com.composesupercharts.models.LegendPosition
-import com.composesupercharts.models.SolidPoint
+import com.composesupercharts.models.LegendItemScope
 
 /**
  * A standard legend molecule for charts.
@@ -60,7 +59,7 @@ fun ChartLegend(
                 )
     ) {
         Row(
-            modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = modifier.then(config.legendModifier).fillMaxWidth().padding(vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
@@ -72,6 +71,7 @@ fun ChartLegend(
                     val lineConfig = config.lines.getOrNull(index)
                     if (lineConfig != null) {
                         LegendItem(
+                            index = index,
                             label = label,
                             lineConfig = lineConfig,
                             config = config,
@@ -87,26 +87,44 @@ fun ChartLegend(
 
 @Composable
 private fun LegendItem(
+    index: Int,
     label: String,
     lineConfig: ChartLineConfig,
     config: ChartStyleConfig,
     isHidden: Boolean,
     onClick: (() -> Unit)?
 ) {
+    val toggle = onClick
+    val scope = LegendItemScope(
+        index = index,
+        label = label,
+        lineConfig = lineConfig,
+        isHidden = isHidden,
+        onToggle = toggle
+    )
+
+    config.legendItemRenderer?.let { renderer ->
+        renderer(scope)
+        return
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = if (onClick != null) Modifier.clickable { onClick() } else Modifier
     ) {
         val isHollow = lineConfig.pointStyle is HollowPoint
+        val pointRadius = lineConfig.pointStyle.radius.coerceAtLeast(1f)
         
-        ChartLegendShape(
-            modifier = Modifier.size(width = config.legendShapeWidth, height = config.legendShapeHeight),
-            color = lineConfig.lineStyle.color.copy(alpha = if (isHidden) 0.28f else 1f),
-            lineStrokeWidth = 3f,
-            pointRadius = 4f,
-            isHollow = isHollow,
-            pathEffect = lineConfig.lineStyle.pathEffect
-        )
+        config.legendMarkerRenderer?.let { renderer ->
+            renderer(scope)
+        } ?: ChartLegendShape(
+                modifier = Modifier.size(width = config.legendShapeWidth, height = config.legendShapeHeight),
+                color = lineConfig.lineStyle.color.copy(alpha = lineConfig.lineStyle.alpha * if (isHidden) 0.28f else 1f),
+                lineStrokeWidth = lineConfig.lineStyle.width,
+                pointRadius = pointRadius,
+                isHollow = isHollow,
+                pathEffect = lineConfig.lineStyle.pathEffect
+            )
         
         Spacer(modifier = Modifier.height(4.dp))
         ChartText(text = label, style = config.legendTextStyle.copy(color = config.legendTextStyle.color.copy(alpha = if (isHidden) 0.45f else 1f)))

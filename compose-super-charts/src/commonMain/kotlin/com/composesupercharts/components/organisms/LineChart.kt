@@ -50,10 +50,13 @@ import com.composesupercharts.components.molecules.ChartLegend
 import com.composesupercharts.components.molecules.HighlightAndTooltip
 import com.composesupercharts.models.ChartPointData
 import com.composesupercharts.models.ChartStyleConfig
+import com.composesupercharts.models.AreaFillBehavior
 import com.composesupercharts.models.LegendPosition
 import com.composesupercharts.models.HollowPoint
+import com.composesupercharts.models.NullPointBehavior
 import com.composesupercharts.models.SolidPoint
 import com.composesupercharts.models.UnitType
+import com.composesupercharts.models.TooltipBubbleData
 import com.composesupercharts.domain.ChartMathCalculations
 import com.composesupercharts.utils.formatWithUnit
 import com.composesupercharts.utils.vertical
@@ -116,16 +119,22 @@ fun LineChart(
     val scrollState = rememberScrollState()
     
     // Map of animated values to support morphing
-    val animatedPoints = remember(points) { points.map { it.yValues.map { v -> Animatable(v ?: 0f) } } }
+    val animatedPoints = remember(points) {
+        points.map { point ->
+            point.yValues.map { value -> value?.let { Animatable(it) } }
+        }
+    }
     
     LaunchedEffect(points) {
         animatedPoints.forEachIndexed { pointIdx, anims ->
             anims.forEachIndexed { seriesIdx, animatable ->
-                val target = points[pointIdx].yValues.getOrNull(seriesIdx) ?: 0f
-                animatable.animateTo(
-                    targetValue = target,
-                    animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing)
-                )
+                val target = points[pointIdx].yValues.getOrNull(seriesIdx)
+                if (animatable != null && target != null) {
+                    animatable.animateTo(
+                        targetValue = target,
+                        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing)
+                    )
+                }
             }
         }
     }
@@ -190,7 +199,9 @@ fun LineChart(
                 ) {
                     for (i in maxY downTo 1) {
                         val value = i * stepValue
-                        val label = value.formatWithUnit(unitType)
+                        val label = config.yAxisTickFormatter?.invoke(value)
+                            ?: config.valueFormatter?.invoke(value)
+                            ?: value.formatWithUnit(unitType)
                         ChartText(
                             text = label,
                             style = MaterialTheme.typography.labelSmall,
@@ -259,30 +270,53 @@ fun LineChart(
                         val linePaths = config.lines.mapIndexed { lineIndex, lineConfig ->
                             // Use animated values for morphing
                             val currentPoints = points.mapIndexed { pIdx, pData ->
-                                pData.copy(yValues = pData.yValues.mapIndexed { sIdx, _ -> 
-                                    animatedPoints[pIdx][sIdx].value 
+                                pData.copy(yValues = pData.yValues.mapIndexed { sIdx, rawValue ->
+                                    when {
+                                        rawValue == null && config.nullPointBehavior == NullPointBehavior.TreatAsZero -> 0f
+                                        rawValue == null -> null
+                                        else -> animatedPoints[pIdx].getOrNull(sIdx)?.value ?: rawValue
+                                    }
                                 })
                             }
                             
-                            val offsets = ChartMathCalculations.generatePointOffsets(currentPoints, size, maxOfY) { it.yValues.getOrNull(lineIndex) }
+                            val offsets = ChartMathCalculations.generatePointOffsets(
+                                points = currentPoints,
+                                size = size,
+                                calculatedMaxY = maxOfY,
+                                nullPointBehavior = config.nullPointBehavior
+                            ) { it.yValues.getOrNull(lineIndex) }
                             
-                            val rawPath = ChartMathCalculations.generateLinePath(offsets)
-                            val measure = PathMeasure().apply { setPath(rawPath, false) }
-                            val animatedPath = Path()
-                            measure.getSegment(0f, measure.length * progress, animatedPath, true)
+                            val animatedPaths = ChartMathCalculations
+                                .generateLinePaths(offsets, config.nullPointBehavior)
+                                .map { rawPath ->
+                                    val measure = PathMeasure().apply { setPath(rawPath, false) }
+                                    Path().also { animatedPath ->
+                                        measure.getSegment(0f, measure.length * progress, animatedPath, true)
+                                    }
+                                }
                             
-                            val animatedFillPath = if (lineConfig.fillGradientColors != null) {
-                                val fPath = ChartMathCalculations.generateFilledPath(offsets, size.height)
-                                val fMeasure = PathMeasure().apply { setPath(fPath, false) }
-                                val afPath = Path()
-                                fMeasure.getSegment(0f, fMeasure.length * progress, afPath, true)
-                                afPath
+                            val fillPaths = if (lineConfig.fillGradientColors != null) {
+                                if (config.areaFillBehavior == AreaFillBehavior.CloseToBaselinePerSegment) {
+                                    ChartMathCalculations.generateFilledPathsPerSegment(
+                                        offsets = offsets,
+                                        height = size.height,
+                                        nullPointBehavior = config.nullPointBehavior
+                                    )
+                                } else {
+                                    listOf(
+                                        ChartMathCalculations.generateFilledPath(
+                                            offsets = offsets,
+                                            height = size.height,
+                                            nullPointBehavior = config.nullPointBehavior
+                                        )
+                                    )
+                                }
                             } else null
 
                             object { 
                                 val offsets = offsets
-                                val animatedPath = animatedPath
-                                val animatedFillPath = animatedFillPath
+                                val animatedPaths = animatedPaths
+                                val fillPaths = fillPaths
                             }
                         }
 
@@ -293,36 +327,42 @@ fun LineChart(
                                 if (lineIndex !in visibleLineIndexes) return@forEachIndexed
                                 val paths = linePaths[lineIndex]
                                 
-                                if (paths.animatedFillPath != null && lineConfig.fillGradientColors != null) {
+                                if (paths.fillPaths != null && lineConfig.fillGradientColors != null) {
                                     val gradientBrush = Brush.verticalGradient(
                                         colors = lineConfig.fillGradientColors,
                                         startY = 0f,
                                         endY = size.height
                                     )
-                                    drawPath(path = paths.animatedFillPath, brush = gradientBrush, style = Fill)
+                                    paths.fillPaths.forEach { fillPath ->
+                                        drawPath(path = fillPath, brush = gradientBrush, style = Fill)
+                                    }
                                 }
 
-                                drawPath(
-                                    path = paths.animatedPath,
-                                    color = lineConfig.lineStyle.color,
-                                    style = Stroke(
-                                        width = lineConfig.lineStyle.width,
-                                        pathEffect = lineConfig.lineStyle.pathEffect
+                                paths.animatedPaths.forEach { animatedPath ->
+                                    drawPath(
+                                        path = animatedPath,
+                                        color = lineConfig.lineStyle.color.copy(alpha = lineConfig.lineStyle.alpha),
+                                        style = Stroke(
+                                            width = lineConfig.lineStyle.width,
+                                            pathEffect = lineConfig.lineStyle.pathEffect,
+                                            cap = lineConfig.lineStyle.cap,
+                                            join = lineConfig.lineStyle.join
+                                        )
                                     )
-                                )
+                                }
 
                                 paths.offsets.forEach { offset ->
                                     if (offset != null) {
                                         val pStyle = lineConfig.pointStyle
                                         if (pStyle is SolidPoint) {
                                             drawCircle(
-                                                color = lineConfig.lineStyle.color,
+                                                color = lineConfig.lineStyle.color.copy(alpha = lineConfig.lineStyle.alpha),
                                                 radius = pStyle.radius * pointScale,
                                                 center = offset
                                             )
                                         } else if (pStyle is HollowPoint) {
                                             drawCircle(
-                                                color = lineConfig.lineStyle.color,
+                                                color = lineConfig.lineStyle.color.copy(alpha = lineConfig.lineStyle.alpha),
                                                 radius = pStyle.radius * pointScale,
                                                 center = offset,
                                                 style = Stroke(width = pStyle.strokeWidth)
@@ -344,13 +384,21 @@ fun LineChart(
                 if (config.isClickable) {
                     selectedIndex?.let { index ->
                         if (index in points.indices) {
-                            HighlightAndTooltip(
-                                index = index,
-                                labels = points[index].highlightLabels.filterIndexed { seriesIndex, _ -> seriesIndex in visibleLineIndexes },
-                                points = points,
-                                config = config,
-                                onClose = { selectedIndex = null }
+                            val labels = buildTooltipLabels(
+                                point = points[index],
+                                visibleLineIndexes = visibleLineIndexes,
+                                legendLabels = legendLabels,
+                                config = config
                             )
+                            if (labels.isNotEmpty()) {
+                                HighlightAndTooltip(
+                                    index = index,
+                                    labels = labels,
+                                    points = points,
+                                    config = config,
+                                    onClose = { selectedIndex = null }
+                                )
+                            }
                         }
                     }
                 }
@@ -366,13 +414,13 @@ fun LineChart(
                 modifier = chartWidthModifier.height(bottomAxisHeight),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                points.forEach {
+                points.forEachIndexed { labelIndex, point ->
                     Box(
                         modifier = Modifier.weight(1f),
                         contentAlignment = Alignment.TopCenter
                     ) {
                         ChartText(
-                            text = it.xLabel,
+                            text = config.xAxisLabelFormatter?.invoke(point.xLabel, labelIndex) ?: point.xLabel,
                             style = config.xAxisLabelTextStyle,
                             textAlign = TextAlign.Center,
                             maxLines = 1,
@@ -398,6 +446,30 @@ fun LineChart(
                         hiddenSeriesIndexes + index
                     }
                 } else null
+            )
+        }
+    }
+}
+
+private fun buildTooltipLabels(
+    point: ChartPointData,
+    visibleLineIndexes: List<Int>,
+    legendLabels: List<String>?,
+    config: ChartStyleConfig
+): List<TooltipBubbleData> {
+    return visibleLineIndexes.mapNotNull { seriesIndex ->
+        val rawValue = point.yValues.getOrNull(seriesIndex)
+        val value = rawValue ?: if (config.nullPointBehavior == NullPointBehavior.TreatAsZero) 0f else null
+        if (value == null) {
+            null
+        } else {
+            val providedLabel = point.highlightLabels.getOrNull(seriesIndex)
+            TooltipBubbleData(
+                labelName = providedLabel?.labelName ?: legendLabels?.getOrNull(seriesIndex) ?: "Series ${seriesIndex + 1}",
+                value = providedLabel?.value
+                    ?: config.tooltipValueFormatter?.invoke(value)
+                    ?: config.valueFormatter?.invoke(value)
+                    ?: value.toString()
             )
         }
     }

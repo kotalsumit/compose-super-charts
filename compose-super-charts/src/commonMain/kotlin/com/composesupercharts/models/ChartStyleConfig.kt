@@ -1,6 +1,10 @@
 package com.composesupercharts.models
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -12,11 +16,17 @@ interface LineStyle {
     val color: Color
     val width: Float
     val pathEffect: PathEffect?
+    val alpha: Float
+    val cap: StrokeCap
+    val join: StrokeJoin
 }
 
 data class SolidLine(
     override val color: Color,
-    override val width: Float = 4f
+    override val width: Float = 4f,
+    override val alpha: Float = 1f,
+    override val cap: StrokeCap = StrokeCap.Butt,
+    override val join: StrokeJoin = StrokeJoin.Miter
 ) : LineStyle {
     override val pathEffect: PathEffect? = null
 }
@@ -24,7 +34,10 @@ data class SolidLine(
 data class DashedLine(
     override val color: Color,
     override val width: Float = 3f,
-    val intervals: FloatArray = floatArrayOf(10f, 10f)
+    val intervals: FloatArray = floatArrayOf(10f, 10f),
+    override val alpha: Float = 1f,
+    override val cap: StrokeCap = StrokeCap.Butt,
+    override val join: StrokeJoin = StrokeJoin.Miter
 ) : LineStyle {
     override val pathEffect: PathEffect = PathEffect.dashPathEffect(intervals)
     override fun equals(other: Any?): Boolean {
@@ -34,6 +47,9 @@ data class DashedLine(
         if (color != other.color) return false
         if (width != other.width) return false
         if (!intervals.contentEquals(other.intervals)) return false
+        if (alpha != other.alpha) return false
+        if (cap != other.cap) return false
+        if (join != other.join) return false
 
         return true
     }
@@ -42,6 +58,9 @@ data class DashedLine(
         var result = color.hashCode()
         result = 31 * result + width.hashCode()
         result = 31 * result + intervals.contentHashCode()
+        result = 31 * result + alpha.hashCode()
+        result = 31 * result + cap.hashCode()
+        result = 31 * result + join.hashCode()
         return result
     }
 }
@@ -70,6 +89,30 @@ data class ChartLineConfig(
     val pointStyle: PointStyle,
     val fillGradientColors: List<Color>? = null,
     val isVisible: Boolean = true
+)
+
+enum class NullPointBehavior {
+    BreakSegment,
+    SkipPoint,
+    TreatAsZero
+}
+
+enum class AreaFillBehavior {
+    CloseToBaselinePerSegment,
+    ConnectAcrossSegments
+}
+
+enum class TooltipLayoutMode {
+    Column,
+    Row
+}
+
+data class LegendItemScope(
+    val index: Int,
+    val label: String,
+    val lineConfig: ChartLineConfig,
+    val isHidden: Boolean,
+    val onToggle: (() -> Unit)?
 )
 
 data class ChartStyleConfig(
@@ -110,5 +153,17 @@ data class ChartStyleConfig(
     val animationDuration: Int = 500,
     val showCrosshair: Boolean = true,
     val allowLegendToggle: Boolean = false,
-    val valueFormatter: ((Float) -> String)? = null
+    val valueFormatter: ((Float) -> String)? = null,
+    val yAxisTickFormatter: ((Float) -> String)? = null,
+    val xAxisLabelFormatter: ((String, Int) -> String)? = null,
+    val tooltipValueFormatter: ((Float) -> String)? = null,
+    val accessibilityFormatter: ((Float) -> String)? = null,
+    val nullPointBehavior: NullPointBehavior = NullPointBehavior.BreakSegment,
+    val areaFillBehavior: AreaFillBehavior = AreaFillBehavior.CloseToBaselinePerSegment,
+    val tooltipLayoutMode: TooltipLayoutMode = TooltipLayoutMode.Column,
+    val showTooltipDivider: Boolean = false,
+    val tooltipContent: (@Composable (selectedXIndex: Int, values: List<TooltipBubbleData>, onClose: () -> Unit) -> Unit)? = null,
+    val legendItemRenderer: (@Composable (LegendItemScope) -> Unit)? = null,
+    val legendMarkerRenderer: (@Composable (LegendItemScope) -> Unit)? = null,
+    val legendModifier: Modifier = Modifier
 )

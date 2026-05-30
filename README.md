@@ -33,6 +33,9 @@ The library is being prepared for release. The sample app is the quickest way to
 - Shared legends with top, bottom, and hidden positions.
 - Optional legend item toggling for supported multi-series charts.
 - Optional value labels and formatter callbacks where the chart supports them.
+- Null-aware line and area rendering with configurable gap behavior.
+- Separate y-axis, x-axis, tooltip, and accessibility formatters for line-style charts.
+- Custom tooltip and legend renderer hooks for product-specific UI.
 - Empty, loading, and error state helpers through `ChartDisplayState` and `ChartStateView`.
 - Accessibility description helpers for chart semantics.
 - Sample screens for every chart type, including controls for common configuration options.
@@ -160,11 +163,17 @@ LineChart(
         ),
         legendPosition = LegendPosition.BOTTOM,
         xAxisLabelRotation = -35f,
+        nullPointBehavior = NullPointBehavior.BreakSegment,
+        areaFillBehavior = AreaFillBehavior.CloseToBaselinePerSegment,
+        yAxisTickFormatter = { value -> value.toInt().toString() },
+        tooltipValueFormatter = { value -> "${value.toInt()} units" },
         showTooltipCloseButton = true,
         tooltipAutoDismissMs = 2500
     )
 )
 ```
+
+For product UIs that need their own tooltip or legend presentation, pass `tooltipContent`, `legendItemRenderer`, or `legendMarkerRenderer` in `ChartStyleConfig`. These hooks are optional; the built-in tooltip and legend remain the default.
 
 ## Contributing
 
